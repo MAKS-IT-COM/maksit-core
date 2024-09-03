@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>MaksIT.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
+
+    <!-- NuGet package metadata -->
+    <PackageId>MaksIT.Core</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Maksym Sadovnychyy</Authors>
+    <Company>MAKS-IT</Company>
+    <Product>MaksIT.Core</Product>
+    <Description>MaksIT.Core is a collection of helper methods and extensions for .NET projects, designed to simplify common tasks and improve code readability. The library includes extensions for `Guid`, `string`, `Object`, and a base class for creating enumeration types.</Description>
+    <PackageTags>dotnet;enumeration;string;guid;object;parsers;extensions</PackageTags>
+    <RepositoryUrl>https://github.com/MAKS-IT-COM/maksit-core</RepositoryUrl>
+    <License>MIT</License>
+    <RequireLicenseAcceptance>false</RequireLicenseAcceptance>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+</Project>
