@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Data;
 using System.Globalization;
 using System.Linq;
 using System.Security.Cryptography;
@@ -227,6 +228,39 @@ namespace MaksIT.Core.Extensions {
       }
 
       return string.Join("", words);
+    }
+
+    public static DataTable CSVToDataTable(this string filePath) {
+      if (string.IsNullOrEmpty(filePath))
+        throw new ArgumentNullException(nameof(filePath));
+
+      using var sr = new StreamReader(filePath);
+
+      var headerLine = sr.ReadLine();
+      if (headerLine == null)
+        throw new InvalidOperationException("File is empty");
+
+      var headers = headerLine.Split(',');
+      var dt = new DataTable();
+      foreach (var header in headers) {
+        dt.Columns.Add(header);
+      }
+
+      while (!sr.EndOfStream) {
+        var line = sr.ReadLine();
+        if (line == null)
+          continue;
+
+        var rows = Regex.Split(line, ",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)");
+        var dr = dt.NewRow();
+
+        for (var i = 0; i < headers.Length; i++) {
+          dr[i] = i < rows.Length ? rows[i] : string.Empty;
+        }
+        dt.Rows.Add(dr);
+      }
+
+      return dt;
     }
   }
 }

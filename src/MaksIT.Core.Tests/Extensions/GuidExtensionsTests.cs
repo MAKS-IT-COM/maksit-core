@@ -1,7 +1,8 @@
-﻿using System;
-using Xunit;
+﻿using MaksIT.Core.Extensions;
 
-namespace MaksIT.Core.Extensions.Tests {
+
+namespace MaksIT.Core.Tests.Extensions {
+
   public class GuidExtensionsTests {
     [Fact]
     public void ToNullable_WithEmptyGuid_ShouldReturnNull() {
