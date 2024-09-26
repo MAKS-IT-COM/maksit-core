@@ -13,6 +13,7 @@ MaksIT.Core is a collection of helper methods and extensions for .NET projects, 
   - [Password Hasher](#password-hasher)
   - [DataTable Extensions](#datatable-extensions)
   - [DateTime Extensions](#datetime-extensions)
+  - [JWT Token Generation and Validation](#jwt-token-generation-and-validation)
 - [Available Methods](#available-methods)
   - [Enumeration Methods](#enumeration-methods)
   - [Guid Methods](#guid-methods)
@@ -21,6 +22,7 @@ MaksIT.Core is a collection of helper methods and extensions for .NET projects, 
   - [Security Methods](#security-methods)
   - [DataTable Methods](#datatable-methods)
   - [DateTime Methods](#datetime-methods)
+  - [JWT Methods](#jwt-methods)
 - [Contributing](#contributing)
 - [License](#license)
 - [Contact](#contact)
@@ -166,6 +168,50 @@ DateTime nextThursday = DateTime.Now.NextWeekday(DayOfWeek.Thursday);
 Console.WriteLine(nextThursday); // Output: Date of the next Thursday
 ```
 
+### JWT Token Generation and Validation
+
+The `JwtGenerator` class provides methods for generating and validating JWT tokens, as well as generating refresh tokens. This is useful for implementing secure authentication and authorization mechanisms in your applications.
+
+#### Generate a JWT Token
+
+```csharp
+using MaksIT.Core.Security;
+
+string secret = "your_secret_key";
+string issuer = "your_issuer";
+string audience = "your_audience";
+double expiration = 30; // Token expiration in minutes
+string username = "user123";
+List<string> roles = new List<string> { "Admin", "User" };
+
+string token = JwtGenerator.GenerateToken(secret, issuer, audience, expiration, username, roles);
+Console.WriteLine("Generated JWT Token: " + token);
+```
+
+#### Validate a JWT Token
+
+```csharp
+string tokenToValidate = "your_jwt_token";
+
+JWTTokenClaims? claims = JwtGenerator.ValidateToken(secret, issuer, audience, tokenToValidate);
+if (claims != null)
+{
+    Console.WriteLine($"Username: {claims.Username}");
+    Console.WriteLine("Roles: " + string.Join(", ", claims.Roles));
+}
+else
+{
+    Console.WriteLine("Invalid token.");
+}
+```
+
+#### Generate a Refresh Token
+
+```csharp
+string refreshToken = JwtGenerator.GenerateRefreshToken();
+Console.WriteLine("Generated Refresh Token: " + refreshToken);
+```
+
 ## Available Methods
 
 ### Enumeration Methods
@@ -240,6 +286,12 @@ Console.WriteLine(nextThursday); // Output: Date of the next Thursday
 - **IsEndOfMonth(this DateTime date)**: Checks if the date is the end of the month.
 - **IsSameMonth(this DateTime date, DateTime targetDate)**: Checks if two dates are in the same month and year.
 - **GetDifferenceInYears(this DateTime startDate, DateTime endDate)**: Returns the difference in years between two dates.
+
+### JWT Methods
+
+- **GenerateToken**: Generates jwt-token-generation-and-validationa JWT token.
+- **ValidateToken**: Validates a JWT token and extracts claims.
+- **GenerateRefreshToken**: Generates a secure refresh token.
 
 ## Contributing
 
