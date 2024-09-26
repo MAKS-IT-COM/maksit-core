@@ -11,18 +11,25 @@ namespace MaksIT.Core.Security;
 public class JWTTokenClaims {
   public required string? Username { get; set; }
   public required List<string>? Roles { get; set; }
+  public DateTime? IssuedAt { get; set; }
+  public DateTime? ExpiresAt { get; set; }
 }
 
 
 public static class JwtGenerator {
-  public static string GenerateToken(string secret, string issuer, string audience, double expiration, string username, List<string> roles) {
+  public static (string, JWTTokenClaims) GenerateToken(string secret, string issuer, string audience, double expiration, string username, List<string> roles) {
     var secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
     var credentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
+
+    var issuedAt = DateTime.UtcNow;
+    var expiresAt = issuedAt.AddMinutes(expiration);
 
     var claims = new List<Claim>
     {
           new Claim(ClaimTypes.Name, username),
-          new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+          new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+          new Claim(JwtRegisteredClaimNames.Iat, new DateTimeOffset(issuedAt).ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
+          new Claim(JwtRegisteredClaimNames.Exp, new DateTimeOffset(expiresAt).ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
       };
 
     claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
@@ -35,7 +42,18 @@ public static class JwtGenerator {
         signingCredentials: credentials
     );
 
-    return new JwtSecurityTokenHandler().WriteToken(token);
+    var jwtToken = new JwtSecurityTokenHandler().WriteToken(token);
+
+
+    // Create the JWTTokenClaims object
+    var tokenClaims = new JWTTokenClaims {
+      Username = username,
+      Roles = roles,
+      IssuedAt = issuedAt,
+      ExpiresAt = expiresAt
+    };
+
+    return (jwtToken, tokenClaims);
   }
 
 
@@ -61,15 +79,26 @@ public static class JwtGenerator {
       var username = principal?.Identity?.Name;
       var roles = principal?.Claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value).ToList();
 
-      return  new JWTTokenClaims {
+
+      var issuedAtClaim = principal?.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Iat)?.Value;
+      var expiresAtClaim = principal?.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Exp)?.Value;
+
+      DateTime? issuedAt = issuedAtClaim != null ? DateTimeOffset.FromUnixTimeSeconds(long.Parse(issuedAtClaim)).UtcDateTime : (DateTime?)null;
+      DateTime? expiresAt = expiresAtClaim != null ? DateTimeOffset.FromUnixTimeSeconds(long.Parse(expiresAtClaim)).UtcDateTime : (DateTime?)null;
+
+
+      return new JWTTokenClaims {
         Username = username,
-        Roles = roles
+        Roles = roles,
+        IssuedAt = issuedAt,
+        ExpiresAt = expiresAt
       };
     }
     catch {
       return null;
     }
   }
+
   public static string GenerateRefreshToken() {
     var randomNumber = new byte[32];
     using (var rng = RandomNumberGenerator.Create()) {

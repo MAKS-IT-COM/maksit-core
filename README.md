@@ -184,7 +184,7 @@ double expiration = 30; // Token expiration in minutes
 string username = "user123";
 List<string> roles = new List<string> { "Admin", "User" };
 
-string token = JwtGenerator.GenerateToken(secret, issuer, audience, expiration, username, roles);
+(string token, JWTTokenClaims claims) = JwtGenerator.GenerateToken(secret, issuer, audience, expiration, username, roles);
 Console.WriteLine("Generated JWT Token: " + token);
 ```
 
