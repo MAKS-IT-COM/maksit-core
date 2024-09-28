@@ -14,7 +14,7 @@ public class JwtGeneratorTests {
   [Fact]
   public void GenerateToken_ShouldReturnValidToken() {
     // Act
-    var token = JwtGenerator.GenerateToken(Secret, Issuer, Audience, Expiration, Username, Roles);
+    var (token, jwtTokenClaims) = JwtGenerator.GenerateToken(Secret, Issuer, Audience, Expiration, Username, Roles);
 
     // Assert
     Assert.False(string.IsNullOrEmpty(token));
@@ -23,7 +23,7 @@ public class JwtGeneratorTests {
   [Fact]
   public void ValidateToken_ShouldReturnClaimsPrincipal_WhenTokenIsValid() {
     // Arrange
-    var token = JwtGenerator.GenerateToken(Secret, Issuer, Audience, Expiration, Username, Roles);
+    var (token, _) = JwtGenerator.GenerateToken(Secret, Issuer, Audience, Expiration, Username, Roles);
 
     // Act
     var jwtTokenClaims = JwtGenerator.ValidateToken(Secret, Issuer, Audience, token);
@@ -54,5 +54,17 @@ public class JwtGeneratorTests {
 
     // Assert
     Assert.False(string.IsNullOrEmpty(refreshToken));
+  }
+
+  [Fact]
+  public void GenerateSecret_ShouldReturnDifferentValuesOnSubsequentCalls() {
+    // Act
+    string secret1 = JwtGenerator.GenerateSecret();
+    string secret2 = JwtGenerator.GenerateSecret();
+
+    // Assert
+    Assert.False(string.IsNullOrEmpty(secret1));
+    Assert.False(string.IsNullOrEmpty(secret2));
+    Assert.NotEqual(secret1, secret2); // Ensure the secrets are unique
   }
 }
