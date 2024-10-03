@@ -1,4 +1,5 @@
-﻿using MaksIT.Core.Security;
+﻿using MaksIT.Core.Extensions;
+using MaksIT.Core.Security;
 using System;
 using Xunit;
 
@@ -65,5 +66,17 @@ namespace MaksIT.Core.Tests.Security {
       // Assert
       Assert.True(timestep >= 0);
     }
+
+    [Fact]
+    public void GenerateSecret_ReturnsValidBase32String() {
+      // Act
+      var secret = TotpGenerator.GenerateSecret();
+
+      // Assert
+      Assert.False(string.IsNullOrEmpty(secret));
+      Assert.True(secret.IsBase32String());
+    }
+
+    
   }
 }

@@ -59,5 +59,16 @@ public static class TotpGenerator {
     var unixTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
     return unixTimestamp / Timestep;
   }
+
+
+  public static string GenerateSecret() {
+    // Example of generating a 32-character base32 secret for TOTP
+    var random = new byte[20];
+    using (var rng = RandomNumberGenerator.Create()) {
+      rng.GetBytes(random);
+    }
+
+    return Base32Encoder.Encode(random); // You can use a Base32 encoder to generate the secret.
+  }
 }
 

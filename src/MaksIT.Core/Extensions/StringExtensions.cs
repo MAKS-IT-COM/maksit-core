@@ -262,5 +262,15 @@ namespace MaksIT.Core.Extensions {
 
       return dt;
     }
+
+    public static bool IsBase32String(this string input) {
+      // Base32 characters are A-Z and 2-7
+      foreach (char c in input) {
+        if (!((c >= 'A' && c <= 'Z') || (c >= '2' && c <= '7'))) {
+          return false;
+        }
+      }
+      return true;
+    }
   }
 }
