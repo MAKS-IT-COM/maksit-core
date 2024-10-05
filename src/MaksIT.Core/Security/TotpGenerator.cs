@@ -60,7 +60,6 @@ public static class TotpGenerator {
     return unixTimestamp / Timestep;
   }
 
-
   public static string GenerateSecret() {
     // Example of generating a 32-character base32 secret for TOTP
     var random = new byte[20];
@@ -69,6 +68,43 @@ public static class TotpGenerator {
     }
 
     return Base32Encoder.Encode(random); // You can use a Base32 encoder to generate the secret.
+  }
+
+  public static List<string> GenerateRecoveryCodes(int defaultCodeCount = 6) {
+    var recoveryCodes = new List<string>();
+
+    for (int i = 0; i < defaultCodeCount; i++) {
+      var code = Guid.NewGuid().ToString("N").Substring(0, 8); // Generate an 8-character code
+      var formattedCode = $"{code.Substring(0, 4)}-{code.Substring(4, 4)}"; // Format as XXXX-XXXX
+      recoveryCodes.Add(formattedCode);
+    }
+
+    return recoveryCodes;
+  }
+
+  public static string GenerateTotpAuthLink(string label, string username, string twoFactoSharedKey, string issuer, string? algorithm = null, int? digits = null, int? period = null) {
+
+    var queryParams = new List<string> {
+        $"secret={Uri.EscapeDataString(twoFactoSharedKey)}",
+        $"issuer={Uri.EscapeDataString(issuer)}"
+    };
+
+    if (algorithm != null) {
+      queryParams.Add($"algorithm={Uri.EscapeDataString(algorithm)}");
+    }
+
+    if (digits != null) {
+      queryParams.Add($"digits={digits}");
+    }
+
+    if (period != null) {
+      queryParams.Add($"period={period}");
+    }
+
+    var queryString = string.Join("&", queryParams);
+    var authLink = $"otpauth://totp/{Uri.EscapeDataString(label)}:{Uri.EscapeDataString(username)}?{queryString}";
+
+    return authLink;
   }
 }
 
