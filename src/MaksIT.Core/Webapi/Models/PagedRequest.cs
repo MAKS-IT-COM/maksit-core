@@ -3,7 +3,7 @@
 using MaksIT.Core.Abstractions.Webapi;
 
 namespace MaksIT.Core.Webapi.Models;
-public abstract class PagedRequest : RequestModelBase {
+public class PagedRequest : RequestModelBase {
   public int PageSize { get; set; } = 100;
   public int PageNumber { get; set; } = 1;
 
