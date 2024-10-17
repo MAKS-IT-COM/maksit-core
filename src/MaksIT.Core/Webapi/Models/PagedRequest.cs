@@ -1,65 +1,57 @@
 ﻿using System.Linq.Expressions;
 
+using MaksIT.Core.Extensions;
 using MaksIT.Core.Abstractions.Webapi;
 
+
 namespace MaksIT.Core.Webapi.Models;
+
 public class PagedRequest : RequestModelBase {
   public int PageSize { get; set; } = 100;
   public int PageNumber { get; set; } = 1;
 
-  // Global filter applicable to any collection
   public string? Filters { get; set; }
-
-  // Specific filters for different collections
   public Dictionary<string, string>? CollectionFilters { get; set; }
 
-  // Optional sorting
   public string? SortBy { get; set; }
   public bool IsAscending { get; set; } = true;
 
-  // Method to build an expression for a specific collection, combining global and collection-specific filters
-  public Expression<Func<T, bool>> BuildCollectionFilterExpression<T>(string collectionName) {
-    var expressions = new List<Expression>();
+  public Expression<Func<T, bool>>? BuildCollectionFilterExpression<T>(string collectionName) {
+    Expression<Func<T, bool>>? globalFilterExpression = null;
+    Expression<Func<T, bool>>? collectionFilterExpression = null;
 
-    var parameter = Expression.Parameter(typeof(T), "x");
-
-    // Add global filters if available
     if (!string.IsNullOrEmpty(Filters)) {
-      var globalFilterExpression = BuildFilterExpression<T>(Filters, parameter);
-      expressions.Add(globalFilterExpression);
+      globalFilterExpression = BuildFilterExpression<T>(Filters);
     }
 
-    // Add collection-specific filters if available
-    if (CollectionFilters != null && CollectionFilters.ContainsKey(collectionName) && !string.IsNullOrEmpty(CollectionFilters[collectionName])) {
-      var collectionFilterExpression = BuildFilterExpression<T>(CollectionFilters[collectionName], parameter);
-      expressions.Add(collectionFilterExpression);
+    if (CollectionFilters != null && CollectionFilters.TryGetValue(collectionName, out var collectionFilter) && !string.IsNullOrEmpty(collectionFilter)) {
+      collectionFilterExpression = BuildFilterExpression<T>(collectionFilter);
     }
 
-    // Combine the expressions using AND (you can extend to OR logic if needed)
-    Expression combinedExpression;
-    if (expressions.Any()) {
-      combinedExpression = expressions.Aggregate(Expression.AndAlso);
-    }
-    else {
-      // Default to 'true' if no filters are provided
-      combinedExpression = Expression.Constant(true);
+    if (globalFilterExpression == null && collectionFilterExpression == null) {
+      return null;
     }
 
-    return Expression.Lambda<Func<T, bool>>(combinedExpression, parameter);
+    if (globalFilterExpression != null && collectionFilterExpression != null) {
+      return globalFilterExpression.CombineWith(collectionFilterExpression);
+    }
+
+    return globalFilterExpression ?? collectionFilterExpression;
   }
 
-  // Method to build a LINQ expression from a single filter string (global or collection-specific)
-  public Expression<Func<T, bool>> BuildFilterExpression<T>(string filter, ParameterExpression? parameter = null) {
-    if (string.IsNullOrEmpty(filter))
-      return x => true; // Default to 'true' if no filters are provided
+  public Expression<Func<T, bool>>? BuildFilterExpression<T>(string filter) {
+    if (string.IsNullOrEmpty(filter)) {
+      return null;
+    }
 
-    parameter ??= Expression.Parameter(typeof(T), "x");
+    var parameter = Expression.Parameter(typeof(T), "x");
     var expressions = new List<Expression>();
 
-    // Parse the filters string (this logic can be extended to support more complex filtering)
     var filters = filter.Split(new[] { "AND", "OR" }, StringSplitOptions.None);
 
     foreach (var subFilter in filters) {
+      Expression? expression = null;
+
       if (subFilter.Contains('=')) {
         var parts = subFilter.Split('=');
         var propertyName = parts[0].Trim();
@@ -68,51 +60,53 @@ public class PagedRequest : RequestModelBase {
         var property = Expression.Property(parameter, propertyName);
         var constant = Expression.Constant(ConvertValue(property.Type, value));
 
-        expressions.Add(Expression.Equal(property, constant));
+        expression = Expression.Equal(property, constant);
       }
       else if (subFilter.Contains('>') || subFilter.Contains('<')) {
-        var comparisonType = subFilter.Contains(">=") ? ">=" :
-                             subFilter.Contains("<=") ? "<=" :
-                             subFilter.Contains(">") ? ">" : "<";
-        var parts = subFilter.Split(new[] { '>', '<', '=', ' ' }, StringSplitOptions.RemoveEmptyEntries);
-        var propertyName = parts[0].Trim();
-        var value = parts[1].Trim().Replace("'", "");
+        expression = BuildComparisonExpression(subFilter, parameter);
+      }
 
-        var property = Expression.Property(parameter, propertyName);
-        var constant = Expression.Constant(ConvertValue(property.Type, value));
-
-        switch (comparisonType) {
-          case ">":
-            expressions.Add(Expression.GreaterThan(property, constant));
-            break;
-          case "<":
-            expressions.Add(Expression.LessThan(property, constant));
-            break;
-          case ">=":
-            expressions.Add(Expression.GreaterThanOrEqual(property, constant));
-            break;
-          case "<=":
-            expressions.Add(Expression.LessThanOrEqual(property, constant));
-            break;
-        }
+      if (expression != null) {
+        expressions.Add(expression);
       }
     }
 
-    // Combine the expressions using AND (you can extend to support OR)
+    if (!expressions.Any()) {
+      return null;
+    }
+
     var combinedExpression = expressions.Aggregate(Expression.AndAlso);
 
     return Expression.Lambda<Func<T, bool>>(combinedExpression, parameter);
   }
 
-  // Helper method to convert the value to the correct type
-  private static object ConvertValue(Type type, string value) {
-    if (type == typeof(int))
-      return int.Parse(value);
-    if (type == typeof(bool))
-      return bool.Parse(value);
-    if (type == typeof(DateTime))
-      return DateTime.Parse(value);
+  private static Expression? BuildComparisonExpression(string subFilter, ParameterExpression parameter) {
+    var comparisonType = subFilter.Contains(">=") ? ">=" :
+                         subFilter.Contains("<=") ? "<=" :
+                         subFilter.Contains(">") ? ">" : "<";
 
-    return value; // Default to string
+    var parts = subFilter.Split(new[] { '>', '<', '=', ' ' }, StringSplitOptions.RemoveEmptyEntries);
+    var propertyName = parts[0].Trim();
+    var value = parts[1].Trim().Replace("'", "");
+
+    var property = Expression.Property(parameter, propertyName);
+    var constant = Expression.Constant(ConvertValue(property.Type, value));
+
+    return comparisonType switch {
+      ">" => Expression.GreaterThan(property, constant),
+      "<" => Expression.LessThan(property, constant),
+      ">=" => Expression.GreaterThanOrEqual(property, constant),
+      "<=" => Expression.LessThanOrEqual(property, constant),
+      _ => null
+    };
+  }
+
+  private static object ConvertValue(Type type, string value) {
+    return type switch {
+      var t when t == typeof(int) => int.Parse(value),
+      var t when t == typeof(bool) => bool.Parse(value),
+      var t when t == typeof(DateTime) => DateTime.Parse(value),
+      _ => value
+    };
   }
 }
