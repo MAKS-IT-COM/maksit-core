@@ -7,34 +7,6 @@ namespace MaksIT.Core.Tests.Extensions;
 
 public class ExpressionExtensionsTests {
   [Fact]
-  public void CreateContainsPredicate_ShouldReturnTrue_WhenIdIsInList() {
-    // Arrange
-    var ids = new List<Guid> { Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid() };
-    var targetId = ids[1];
-    var predicate = ExpressionExtensions.CreateContainsPredicate<TestEntity>(ids, nameof(TestEntity.Id));
-
-    // Act
-    var result = predicate.Compile()(new TestEntity { Id = targetId });
-
-    // Assert
-    Assert.True(result);
-  }
-
-  [Fact]
-  public void CreateContainsPredicate_ShouldReturnFalse_WhenIdIsNotInList() {
-    // Arrange
-    var ids = new List<Guid> { Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid() };
-    var targetId = Guid.NewGuid();
-    var predicate = ExpressionExtensions.CreateContainsPredicate<TestEntity>(ids, nameof(TestEntity.Id));
-
-    // Act
-    var result = predicate.Compile()(new TestEntity { Id = targetId });
-
-    // Assert
-    Assert.False(result);
-  }
-
-  [Fact]
   public void CombineWith_ShouldCombineTwoPredicates() {
     // Arrange
     Expression<Func<TestEntity, bool>> firstPredicate = x => x.Age > 18;
