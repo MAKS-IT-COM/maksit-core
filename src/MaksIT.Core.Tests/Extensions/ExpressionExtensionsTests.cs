@@ -10,7 +10,7 @@ public class ExpressionExtensionsTests {
   public void CombineWith_ShouldCombineTwoPredicates() {
     // Arrange
     Expression<Func<TestEntity, bool>> firstPredicate = x => x.Age > 18;
-    Expression<Func<TestEntity, bool>> secondPredicate = x => x.Name.StartsWith("A");
+    Expression<Func<TestEntity, bool>> secondPredicate = x => (x.Name ?? "").StartsWith("A");
 
     // Act
     var combinedPredicate = firstPredicate.CombineWith(secondPredicate);
@@ -25,7 +25,7 @@ public class ExpressionExtensionsTests {
   private class TestEntity {
     public Guid Id { get; set; }
     public int Age { get; set; }
-    public string Name { get; set; }
+    public string? Name { get; set; }
   }
 }
 

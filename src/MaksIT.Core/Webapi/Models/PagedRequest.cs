@@ -91,16 +91,18 @@ namespace MaksIT.Core.Webapi.Models {
           expression = Expression.Not(expression);
         }
 
-        // Combine the current expression with the previous one using the correct operator
-        if (combinedExpression == null) {
-          combinedExpression = expression;
-        }
-        else if (i - 1 < operators.Count) // Ensure we don't exceed the operators list size
-        {
-          var operatorType = operators[i - 1];
-          combinedExpression = operatorType == "&&"
-              ? Expression.AndAlso(combinedExpression, expression)
-              : Expression.OrElse(combinedExpression, expression);
+        // Only combine expressions if the new expression is not null
+        if (expression != null) {
+          if (combinedExpression == null) {
+            combinedExpression = expression;
+          }
+          else if (i - 1 < operators.Count) // Ensure we don't exceed the operators list size
+          {
+            var operatorType = operators[i - 1];
+            combinedExpression = operatorType == "&&"
+                ? Expression.AndAlso(combinedExpression, expression)
+                : Expression.OrElse(combinedExpression, expression);
+          }
         }
       }
 

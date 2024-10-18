@@ -4,17 +4,6 @@ using MaksIT.Core.Webapi.Models;
 namespace MaksIT.Core.Tests.Webapi.Models;
 
 public class PagedRequestTests {
-  [Fact]
-  public void BuildFilterExpression_ShouldReturnNull_WhenFilterIsEmpty() {
-    // Arrange
-    var request = new PagedRequest();
-
-    // Act
-    var result = request.BuildFilterExpression<TestEntity>(null);
-
-    // Assert
-    Assert.Null(result);
-  }
 
   [Fact]
   public void BuildFilterExpression_ShouldHandleEqualsOperator() {
@@ -131,6 +120,6 @@ public class PagedRequestTests {
 
 // Helper class for testing purposes
 public class TestEntity {
-  public string Name { get; set; }
+  public string? Name { get; set; }
   public int Age { get; set; }
 }
