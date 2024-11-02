@@ -4,28 +4,33 @@ MaksIT.Core is a collection of helper methods and extensions for .NET projects, 
 
 ## Table of Contents
 
-- [Installation](#installation)
-- [Usage](#usage)
-  - [Enumeration](#enumeration)
-  - [Guid Extensions](#guid-extensions)
-  - [Object Extensions](#object-extensions)
-  - [String Extensions](#string-extensions)
-  - [Password Hasher](#password-hasher)
-  - [DataTable Extensions](#datatable-extensions)
-  - [DateTime Extensions](#datetime-extensions)
-  - [JWT Token Generation and Validation](#jwt-token-generation-and-validation)
-- [Available Methods](#available-methods)
-  - [Enumeration Methods](#enumeration-methods)
-  - [Guid Methods](#guid-methods)
-  - [Object Methods](#object-methods)
-  - [String Methods](#string-methods)
-  - [Security Methods](#security-methods)
-  - [DataTable Methods](#datatable-methods)
-  - [DateTime Methods](#datetime-methods)
-  - [JWT Methods](#jwt-methods)
-- [Contributing](#contributing)
-- [License](#license)
-- [Contact](#contact)
+- [MaksIT.Core](#maksitcore)
+  - [Table of Contents](#table-of-contents)
+  - [Installation](#installation)
+  - [Usage](#usage)
+    - [Enumeration](#enumeration)
+    - [Guid Extensions](#guid-extensions)
+    - [Object Extensions](#object-extensions)
+    - [String Extensions](#string-extensions)
+    - [Password Hasher](#password-hasher)
+    - [DataTable Extensions](#datatable-extensions)
+    - [DateTime Extensions](#datetime-extensions)
+    - [JWT Token Generation and Validation](#jwt-token-generation-and-validation)
+      - [Generate a JWT Token](#generate-a-jwt-token)
+      - [Validate a JWT Token](#validate-a-jwt-token)
+      - [Generate a Refresh Token](#generate-a-refresh-token)
+  - [Available Methods](#available-methods)
+    - [Enumeration Methods](#enumeration-methods)
+    - [Guid Methods](#guid-methods)
+    - [Object Methods](#object-methods)
+    - [String Methods](#string-methods)
+    - [DataTable Methods](#datatable-methods)
+    - [DateTime Methods](#datetime-methods)
+    - [JWT Methods](#jwt-methods)
+  - [Contributing](#contributing)
+  - [Contact](#contact)
+  - [License](#license)
+    - [MIT License](#mit-license)
 
 ## Installation
 
@@ -297,6 +302,13 @@ Console.WriteLine("Generated Refresh Token: " + refreshToken);
 
 Contributions to this project are welcome! Please fork the repository and submit a pull request with your changes. If you encounter any issues or have feature requests, feel free to open an issue on GitHub.
 
+## Contact
+
+If you have any questions or need further assistance, feel free to reach out:
+
+- **Email**: [maksym.sadovnychyy@gmail.com](mailto:maksym.sadovnychyy@gmail.com)
+- **Reddit**: [MaksIT.Core: Enhance Your .NET Development with Efficient Extensions and Helpers](https://www.reddit.com/r/MaksIT/comments/1f8zgqa/maksitcore_enhance_your_net_development_with/?utm_source=share&utm_medium=web3x&utm_name=web3xcss&utm_term=1&utm_content=share_button)
+
 ## License
 
 This project is licensed under the MIT License. See the full license text below.
@@ -328,7 +340,3 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
-
-## Contact
-
-For any questions or inquiries, please reach out via GitHub or [email](mailto:maksym.sadovnychyy@gmail.com).
