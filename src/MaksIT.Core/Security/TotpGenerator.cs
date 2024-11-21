@@ -1,34 +1,60 @@
 ﻿using System.Security.Cryptography;
 
-
 namespace MaksIT.Core.Security;
 
 public static class TotpGenerator {
   private const int Timestep = 30; // Time step in seconds (standard is 30 seconds)
   private const int TotpDigits = 6; // Standard TOTP length is 6 digits
 
-  public static bool Validate(string totpCode, string base32Secret, int timeTolerance = 1) {
-    // Convert the Base32 encoded secret to a byte array
-    byte[] secretBytes = Base32Encoder.Decode(base32Secret);
-
-    // Get current timestamp
-    long timeStepWindow = GetCurrentTimeStepNumber();
-
-    // Validate the TOTP code against the valid time windows (current and around it)
-    for (int i = -timeTolerance; i <= timeTolerance; i++) {
-      var generatedTotp = Generate(secretBytes, timeStepWindow + i);
-      if (generatedTotp == totpCode) {
-        return true;
+  public static bool TryValidate(string totpCode, string base32Secret, int timeTolerance, out bool isValid, out string? errorMessage) {
+    try {
+      // Convert the Base32 encoded secret to a byte array
+      if (!Base32Encoder.TryDecode(base32Secret, out byte[]? secretBytes, out errorMessage)) {
+        isValid = false;
+        return false;
       }
-    }
 
-    return false;
+      // Get current timestamp
+      long timeStepWindow = GetCurrentTimeStepNumber();
+
+      // Validate the TOTP code against the valid time windows (current and around it)
+      for (int i = -timeTolerance; i <= timeTolerance; i++) {
+        var generatedTotp = Generate(secretBytes, timeStepWindow + i);
+        if (generatedTotp == totpCode) {
+          isValid = true;
+          errorMessage = null;
+          return true;
+        }
+      }
+
+      isValid = false;
+      errorMessage = null;
+      return true;
+    }
+    catch (Exception ex) {
+      isValid = false;
+      errorMessage = ex.Message;
+      return false;
+    }
   }
 
-  public static string Generate(string base32Secret, long timestep) {
-    // Convert the Base32 encoded secret to a byte array
-    byte[] secretBytes = Base32Encoder.Decode(base32Secret);
-    return Generate(secretBytes, timestep);
+  public static bool TryGenerate(string base32Secret, long timestep, out string? totpCode, out string? errorMessage) {
+    try {
+      // Convert the Base32 encoded secret to a byte array
+      if (!Base32Encoder.TryDecode(base32Secret, out byte[]? secretBytes, out errorMessage)) {
+        totpCode = null;
+        return false;
+      }
+
+      totpCode = Generate(secretBytes, timestep);
+      errorMessage = null;
+      return true;
+    }
+    catch (Exception ex) {
+      totpCode = null;
+      errorMessage = ex.Message;
+      return false;
+    }
   }
 
   private static string Generate(byte[] secretBytes, long timestep) {
@@ -60,51 +86,76 @@ public static class TotpGenerator {
     return unixTimestamp / Timestep;
   }
 
-  public static string GenerateSecret() {
-    // Example of generating a 32-character base32 secret for TOTP
-    var random = new byte[20];
-    using (var rng = RandomNumberGenerator.Create()) {
-      rng.GetBytes(random);
-    }
+  public static bool TryGenerateSecret(out string? secret, out string? errorMessage) {
+    try {
+      // Example of generating a 32-character base32 secret for TOTP
+      var random = new byte[20];
+      using (var rng = RandomNumberGenerator.Create()) {
+        rng.GetBytes(random);
+      }
 
-    return Base32Encoder.Encode(random); // You can use a Base32 encoder to generate the secret.
+      if (!Base32Encoder.TryEncode(random, out secret, out errorMessage)) {
+        return false;
+      }
+
+      errorMessage = null;
+      return true;
+    }
+    catch (Exception ex) {
+      secret = null;
+      errorMessage = ex.Message;
+      return false;
+    }
   }
 
-  public static List<string> GenerateRecoveryCodes(int defaultCodeCount = 6) {
-    var recoveryCodes = new List<string>();
+  public static bool TryGenerateRecoveryCodes(int defaultCodeCount, out List<string>? recoveryCodes, out string? errorMessage) {
+    try {
+      recoveryCodes = new List<string>();
 
-    for (int i = 0; i < defaultCodeCount; i++) {
-      var code = Guid.NewGuid().ToString("N").Substring(0, 8); // Generate an 8-character code
-      var formattedCode = $"{code.Substring(0, 4)}-{code.Substring(4, 4)}"; // Format as XXXX-XXXX
-      recoveryCodes.Add(formattedCode);
+      for (int i = 0; i < defaultCodeCount; i++) {
+        var code = Guid.NewGuid().ToString("N").Substring(0, 8); // Generate an 8-character code
+        var formattedCode = $"{code.Substring(0, 4)}-{code.Substring(4, 4)}"; // Format as XXXX-XXXX
+        recoveryCodes.Add(formattedCode);
+      }
+
+      errorMessage = null;
+      return true;
     }
-
-    return recoveryCodes;
+    catch (Exception ex) {
+      recoveryCodes = null;
+      errorMessage = ex.Message;
+      return false;
+    }
   }
 
-  public static string GenerateTotpAuthLink(string label, string username, string twoFactoSharedKey, string issuer, string? algorithm = null, int? digits = null, int? period = null) {
+  public static bool TryGenerateTotpAuthLink(string label, string username, string twoFactoSharedKey, string issuer, string? algorithm, int? digits, int? period, out string? authLink, out string? errorMessage) {
+    try {
+      var queryParams = new List<string> {
+                $"secret={Uri.EscapeDataString(twoFactoSharedKey)}",
+                $"issuer={Uri.EscapeDataString(issuer)}"
+            };
 
-    var queryParams = new List<string> {
-        $"secret={Uri.EscapeDataString(twoFactoSharedKey)}",
-        $"issuer={Uri.EscapeDataString(issuer)}"
-    };
+      if (algorithm != null) {
+        queryParams.Add($"algorithm={Uri.EscapeDataString(algorithm)}");
+      }
 
-    if (algorithm != null) {
-      queryParams.Add($"algorithm={Uri.EscapeDataString(algorithm)}");
+      if (digits != null) {
+        queryParams.Add($"digits={digits}");
+      }
+
+      if (period != null) {
+        queryParams.Add($"period={period}");
+      }
+
+      var queryString = string.Join("&", queryParams);
+      authLink = $"otpauth://totp/{Uri.EscapeDataString(label)}:{Uri.EscapeDataString(username)}?{queryString}";
+      errorMessage = null;
+      return true;
     }
-
-    if (digits != null) {
-      queryParams.Add($"digits={digits}");
+    catch (Exception ex) {
+      authLink = null;
+      errorMessage = ex.Message;
+      return false;
     }
-
-    if (period != null) {
-      queryParams.Add($"period={period}");
-    }
-
-    var queryString = string.Join("&", queryParams);
-    var authLink = $"otpauth://totp/{Uri.EscapeDataString(label)}:{Uri.EscapeDataString(username)}?{queryString}";
-
-    return authLink;
   }
 }
-

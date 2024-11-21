@@ -11,13 +11,15 @@ namespace MaksIT.Core.Tests.Security {
     public void Validate_ValidTotpCode_ReturnsTrue() {
       // Arrange
       var timestep = TotpGenerator.GetCurrentTimeStepNumber();
-      var validTotpCode = TotpGenerator.Generate(Base32Secret, timestep);
+      TotpGenerator.TryGenerate(Base32Secret, timestep, out var validTotpCode, out var generateErrorMessage);
 
       // Act
-      var isValid = TotpGenerator.Validate(validTotpCode, Base32Secret);
+      var result = TotpGenerator.TryValidate(validTotpCode, Base32Secret, 0, out var isValid, out var validateErrorMessage);
 
       // Assert
+      Assert.True(result);
       Assert.True(isValid);
+      Assert.Null(validateErrorMessage);
     }
 
     [Fact]
@@ -26,23 +28,27 @@ namespace MaksIT.Core.Tests.Security {
       var invalidTotpCode = "123456"; // Example invalid TOTP code
 
       // Act
-      var isValid = TotpGenerator.Validate(invalidTotpCode, Base32Secret);
+      var result = TotpGenerator.TryValidate(invalidTotpCode, Base32Secret, 0, out var isValid, out var errorMessage);
 
       // Assert
+      Assert.True(result);
       Assert.False(isValid);
+      Assert.Null(errorMessage);
     }
 
     [Fact]
     public void Validate_TotpCodeWithTimeTolerance_ReturnsTrue() {
       // Arrange
       var timestep = TotpGenerator.GetCurrentTimeStepNumber() - 1; // One timestep in the past
-      var validTotpCode = TotpGenerator.Generate(Base32Secret, timestep);
+      TotpGenerator.TryGenerate(Base32Secret, timestep, out var validTotpCode, out var generateErrorMessage);
 
       // Act
-      var isValid = TotpGenerator.Validate(validTotpCode, Base32Secret, timeTolerance: 1);
+      var result = TotpGenerator.TryValidate(validTotpCode, Base32Secret, 1, out var isValid, out var validateErrorMessage);
 
       // Assert
+      Assert.True(result);
       Assert.True(isValid);
+      Assert.Null(validateErrorMessage);
     }
 
     [Fact]
@@ -51,11 +57,13 @@ namespace MaksIT.Core.Tests.Security {
       var timestep = TotpGenerator.GetCurrentTimeStepNumber();
 
       // Act
-      var totpCode = TotpGenerator.Generate(Base32Secret, timestep);
+      var result = TotpGenerator.TryGenerate(Base32Secret, timestep, out var totpCode, out var errorMessage);
 
       // Assert
+      Assert.True(result);
       Assert.False(string.IsNullOrEmpty(totpCode));
       Assert.Equal(6, totpCode.Length);
+      Assert.Null(errorMessage);
     }
 
     [Fact]
@@ -70,13 +78,13 @@ namespace MaksIT.Core.Tests.Security {
     [Fact]
     public void GenerateSecret_ReturnsValidBase32String() {
       // Act
-      var secret = TotpGenerator.GenerateSecret();
+      var result = TotpGenerator.TryGenerateSecret(out var secret, out var errorMessage);
 
       // Assert
+      Assert.True(result);
       Assert.False(string.IsNullOrEmpty(secret));
       Assert.True(secret.IsBase32String());
+      Assert.Null(errorMessage);
     }
-
-    
   }
 }

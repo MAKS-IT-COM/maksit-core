@@ -8,7 +8,7 @@
 
     <!-- NuGet package metadata -->
     <PackageId>MaksIT.Core</PackageId>
-    <Version>1.1.6</Version>
+    <Version>1.1.7</Version>
     <Authors>Maksym Sadovnychyy</Authors>
     <Company>MAKS-IT</Company>
     <Product>MaksIT.Core</Product>
@@ -26,6 +26,8 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Cryptography.KeyDerivation" Version="8.0.8" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.0" />
     <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.1.0" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.1.0" />
   </ItemGroup>

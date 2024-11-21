@@ -1,6 +1,4 @@
-﻿using System;
-using System.Text;
-using System.Linq;
+﻿using System.Text;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.IdentityModel.Tokens.Jwt;
@@ -16,46 +14,55 @@ public class JWTTokenClaims {
 }
 
 public static class JwtGenerator {
-  public static (string, JWTTokenClaims) GenerateToken(string secret, string issuer, string audience, double expiration, string username, List<string> roles) {
-    var secretKey = GetSymmetricSecurityKey(secret);
-    var credentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
+  public static bool TryGenerateToken(string secret, string issuer, string audience, double expiration, string username, List<string> roles, out (string, JWTTokenClaims)? tokenData, out string? errorMessage) {
+    try {
+      var secretKey = GetSymmetricSecurityKey(secret);
+      var credentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
 
-    var issuedAt = DateTime.UtcNow;
-    var expiresAt = issuedAt.AddMinutes(expiration);
+      var issuedAt = DateTime.UtcNow;
+      var expiresAt = issuedAt.AddMinutes(expiration);
 
-    var claims = new List<Claim>
-    {
-            new Claim(ClaimTypes.Name, username),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-            new Claim(JwtRegisteredClaimNames.Iat, new DateTimeOffset(issuedAt).ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
-            new Claim(JwtRegisteredClaimNames.Exp, new DateTimeOffset(expiresAt).ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
-        };
+      var claims = new List<Claim>
+      {
+          new Claim(ClaimTypes.Name, username),
+          new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+          new Claim(JwtRegisteredClaimNames.Iat, new DateTimeOffset(issuedAt).ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
+          new Claim(JwtRegisteredClaimNames.Exp, new DateTimeOffset(expiresAt).ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
+      };
 
-    claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
+      claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 
-    var tokenDescriptor = new JwtSecurityToken(
-        issuer: issuer,
-        audience: audience,
-        claims: claims,
-        expires: expiresAt,
-        signingCredentials: credentials
-    );
+      var tokenDescriptor = new JwtSecurityToken(
+          issuer: issuer,
+          audience: audience,
+          claims: claims,
+          expires: expiresAt,
+          signingCredentials: credentials
+      );
 
-    var jwtToken = new JwtSecurityTokenHandler().WriteToken(tokenDescriptor);
+      var jwtToken = new JwtSecurityTokenHandler().WriteToken(tokenDescriptor);
 
-    var tokenClaims = new JWTTokenClaims {
-      Username = username,
-      Roles = roles,
-      IssuedAt = issuedAt,
-      ExpiresAt = expiresAt
-    };
+      var tokenClaims = new JWTTokenClaims {
+        Username = username,
+        Roles = roles,
+        IssuedAt = issuedAt,
+        ExpiresAt = expiresAt
+      };
 
-    return (jwtToken, tokenClaims);
+      tokenData = (jwtToken, tokenClaims);
+      errorMessage = null;
+      return true;
+    }
+    catch (Exception ex) {
+      tokenData = null;
+      errorMessage = ex.Message;
+      return false;
+    }
   }
 
   public static string GenerateSecret(int keySize = 32) => Convert.ToBase64String(GetRandomBytes(keySize));
 
-  public static JWTTokenClaims? ValidateToken(string secret, string issuer, string audience, string token) {
+  public static bool TryValidateToken(string secret, string issuer, string audience, string token, out JWTTokenClaims? tokenClaims, out string? errorMessage) {
     try {
       var key = Encoding.UTF8.GetBytes(secret);
       var tokenHandler = new JwtSecurityTokenHandler();
@@ -77,10 +84,14 @@ public static class JwtGenerator {
       if (validatedToken is JwtSecurityToken jwtToken && jwtToken.Header.Alg != SecurityAlgorithms.HmacSha256)
         throw new SecurityTokenException("Invalid token algorithm");
 
-      return ExtractClaims(principal);
+      tokenClaims = ExtractClaims(principal);
+      errorMessage = null;
+      return true;
     }
-    catch {
-      return null;
+    catch (Exception ex) {
+      tokenClaims = null;
+      errorMessage = ex.Message;
+      return false;
     }
   }
 

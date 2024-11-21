@@ -23,21 +23,40 @@ public static class PasswordHasher {
     return Convert.ToBase64String(valueBytes);
   }
 
-  public static (string Salt, string Hash) CreateSaltedHash(string value) {
-    var saltBytes = CreateSaltBytes();
-    var hash = CreateHash(value, saltBytes);
-    var salt = Convert.ToBase64String(saltBytes);
+  public static bool TryCreateSaltedHash(string value, out (string Salt, string Hash)? saltedHash, out string? errorMessage) {
+    try {
+      var saltBytes = CreateSaltBytes();
+      var hash = CreateHash(value, saltBytes);
+      var salt = Convert.ToBase64String(saltBytes);
 
-    return (salt, hash);
+      saltedHash = (salt, hash);
+      errorMessage = null;
+      return true;
+    }
+    catch (Exception ex) {
+      saltedHash = null;
+      errorMessage = ex.Message;
+      return false;
+    }
   }
 
-  public static bool ValidateHash(string value, string salt, string hash) {
-    var saltBytes = Convert.FromBase64String(salt);
-    var hashToCompare = CreateHash(value, saltBytes);
+  public static bool TryValidateHash(string value, string salt, string hash, out bool isValid, out string? errorMessage) {
+    try {
+      var saltBytes = Convert.FromBase64String(salt);
+      var hashToCompare = CreateHash(value, saltBytes);
 
-    return CryptographicOperations.FixedTimeEquals(
-        Convert.FromBase64String(hashToCompare),
-        Convert.FromBase64String(hash)
-    );
+      isValid = CryptographicOperations.FixedTimeEquals(
+          Convert.FromBase64String(hashToCompare),
+          Convert.FromBase64String(hash)
+      );
+
+      errorMessage = null;
+      return true;
+    }
+    catch (Exception ex) {
+      isValid = false;
+      errorMessage = ex.Message;
+      return false;
+    }
   }
 }
