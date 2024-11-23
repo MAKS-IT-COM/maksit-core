@@ -1,6 +1,8 @@
 ﻿using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Diagnostics.CodeAnalysis;
+
 
 namespace MaksIT.Core.Networking;
 
@@ -15,7 +17,11 @@ public static class PingPort {
   /// <param name="portNumber">The port number.</param>
   /// <param name="errorMessage">The error message if the operation fails.</param>
   /// <returns>True if the host is reachable on the specified port; otherwise, false.</returns>
-  public static bool TryHostPort(string hostUri, int portNumber, out string? errorMessage) {
+  public static bool TryHostPort(
+    string hostUri,
+    int portNumber,
+    [NotNullWhen(false)] out string? errorMessage
+  ) {
     if (string.IsNullOrEmpty(hostUri)) {
       errorMessage = "Host URI cannot be null or empty.";
       return false;
@@ -53,7 +59,11 @@ public static class PingPort {
   /// <param name="portNumber">The port number.</param>
   /// <param name="errorMessage">The error message if the operation fails.</param>
   /// <returns>True if the host is reachable on the specified port; otherwise, false.</returns>
-  public static bool TryUDPPort(string hostUri, int portNumber, out string? errorMessage) {
+  public static bool TryUDPPort(
+    string hostUri,
+    int portNumber,
+    [NotNullWhen(false)] out string? errorMessage
+  ) {
     if (string.IsNullOrEmpty(hostUri)) {
       errorMessage = "Host URI cannot be null or empty.";
       return false;

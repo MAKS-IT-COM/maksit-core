@@ -1,5 +1,7 @@
 ﻿using MaksIT.Core.Extensions;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+
 
 namespace MaksIT.Core;
 
@@ -27,7 +29,7 @@ public static class Processes {
   /// <param name="silent">If true, the process will be started without creating a window.</param>
   /// <param name="errorMessage">The error message if the operation fails.</param>
   /// <returns>True if the process started successfully; otherwise, false.</returns>
-  public static bool TryStart(string fileName, string arguments, int timeout, bool silent, out string? errorMessage) {
+  public static bool TryStart(string fileName, string arguments, int timeout, bool silent, [NotNullWhen(false)] out string? errorMessage) {
     try {
       var processInfo = new ProcessStartInfo(fileName) {
         Arguments = arguments,
@@ -60,7 +62,7 @@ public static class Processes {
   /// <param name="process">Process name. Accepts wildcards '*' or '?'</param>
   /// <param name="errorMessage">The error message if the operation fails.</param>
   /// <returns>True if at least one process was killed successfully; otherwise, false.</returns>
-  public static bool TryKill(string process, out string? errorMessage) {
+  public static bool TryKill(string process, [NotNullWhen(false)] out string? errorMessage) {
     bool success = false;
     errorMessage = null;
     foreach (var proc in System.Diagnostics.Process.GetProcesses()) {

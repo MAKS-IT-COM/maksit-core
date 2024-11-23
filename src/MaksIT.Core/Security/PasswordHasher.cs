@@ -1,4 +1,5 @@
-﻿using System.Security.Cryptography;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 
 namespace MaksIT.Core.Security;
@@ -23,7 +24,11 @@ public static class PasswordHasher {
     return Convert.ToBase64String(valueBytes);
   }
 
-  public static bool TryCreateSaltedHash(string value, out (string Salt, string Hash)? saltedHash, out string? errorMessage) {
+  public static bool TryCreateSaltedHash(
+    string value,
+    [NotNullWhen(true)] out (string Salt, string Hash)? saltedHash,
+    [NotNullWhen(false)] out string? errorMessage
+  ) {
     try {
       var saltBytes = CreateSaltBytes();
       var hash = CreateHash(value, saltBytes);
@@ -40,7 +45,13 @@ public static class PasswordHasher {
     }
   }
 
-  public static bool TryValidateHash(string value, string salt, string hash, out bool isValid, out string? errorMessage) {
+  public static bool TryValidateHash(
+    string value,
+    string salt,
+    string hash,
+    [NotNullWhen(true)] out bool isValid,
+    [NotNullWhen(false)] out string? errorMessage
+  ) {
     try {
       var saltBytes = Convert.FromBase64String(salt);
       var hashToCompare = CreateHash(value, saltBytes);

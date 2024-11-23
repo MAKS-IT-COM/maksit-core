@@ -1,6 +1,6 @@
-﻿using System;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Threading;
+
 
 namespace MaksIT.Core;
 
@@ -15,7 +15,7 @@ public static class Culture {
   /// <param name="culture">The culture to set. If null or empty, the invariant culture is used.</param>
   /// <param name="errorMessage">The error message if the operation fails.</param>
   /// <returns>True if the operation was successful; otherwise, false.</returns>
-  public static bool TrySet(string? culture, out string? errorMessage) {
+  public static bool TrySet(string? culture, [NotNullWhen(false)] out string? errorMessage) {
     try {
       var threadCulture = CultureInfo.InvariantCulture;
 

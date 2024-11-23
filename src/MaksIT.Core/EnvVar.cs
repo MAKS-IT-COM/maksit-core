@@ -1,5 +1,6 @@
-﻿using System;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+
 
 namespace MaksIT.Core;
 
@@ -15,7 +16,7 @@ public static class EnvVar {
   /// <param name="newPath">The new path to add.</param>
   /// <param name="errorMessage">The error message if the operation fails.</param>
   /// <returns>True if the operation was successful; otherwise, false.</returns>
-  public static bool TryAddToPath(string newPath, out string? errorMessage) {
+  public static bool TryAddToPath(string newPath, [NotNullWhen(false)] out string? errorMessage) {
     try {
       var pathEnvVar = Environment.GetEnvironmentVariable("PATH") ?? string.Empty;
       char separator = IsWindows ? ';' : ':';
@@ -42,7 +43,7 @@ public static class EnvVar {
   /// <param name="envTarget">The target of the environment variable (machine, user, process).</param>
   /// <param name="errorMessage">The error message if the operation fails.</param>
   /// <returns>True if the operation was successful; otherwise, false.</returns>
-  public static bool TrySet(string envName, string envValue, string envTarget, out string? errorMessage) {
+  public static bool TrySet(string envName, string envValue, string envTarget, [NotNullWhen(false)] out string? errorMessage) {
     try {
       EnvironmentVariableTarget target = GetEnvironmentVariableTarget(envTarget);
       if (target == EnvironmentVariableTarget.Machine && !IsWindows) {
@@ -66,7 +67,7 @@ public static class EnvVar {
   /// <param name="envTarget">The target of the environment variable (machine, user, process).</param>
   /// <param name="errorMessage">The error message if the operation fails.</param>
   /// <returns>True if the operation was successful; otherwise, false.</returns>
-  public static bool TryUnSet(string envName, string envTarget, out string? errorMessage) {
+  public static bool TryUnSet(string envName, string envTarget, [NotNullWhen(false)] out string? errorMessage) {
     try {
       EnvironmentVariableTarget target = GetEnvironmentVariableTarget(envTarget);
       if (target == EnvironmentVariableTarget.Machine && !IsWindows) {

@@ -1,4 +1,5 @@
-﻿using System.Security.Cryptography;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Security.Cryptography;
 
 namespace MaksIT.Core.Security;
 
@@ -37,7 +38,11 @@ public class Crc32 : HashAlgorithm {
 
   public override int HashSize => 32;
 
-  public static bool TryCompute(byte[] buffer, out uint result, out string? errorMessage) {
+  public static bool TryCompute(
+    byte[] buffer,
+    out uint result,
+    [NotNullWhen(false)] out string? errorMessage
+  ) {
     try {
       result = Compute(DefaultPolynomial, DefaultSeed, buffer);
       errorMessage = null;
@@ -50,7 +55,12 @@ public class Crc32 : HashAlgorithm {
     }
   }
 
-  public static bool TryCompute(uint seed, byte[] buffer, out uint result, out string? errorMessage) {
+  public static bool TryCompute(
+    uint seed,
+    byte[] buffer,
+    out uint result,
+    [NotNullWhen(false)] out string? errorMessage
+  ) {
     try {
       result = Compute(DefaultPolynomial, seed, buffer);
       errorMessage = null;
@@ -63,7 +73,13 @@ public class Crc32 : HashAlgorithm {
     }
   }
 
-  public static bool TryCompute(uint polynomial, uint seed, byte[] buffer, out uint result, out string? errorMessage) {
+  public static bool TryCompute(
+    uint polynomial,
+    uint seed,
+    byte[] buffer,
+    out uint result,
+    [NotNullWhen(false)] out string? errorMessage
+  ) {
     try {
       result = Compute(polynomial, seed, buffer);
       errorMessage = null;

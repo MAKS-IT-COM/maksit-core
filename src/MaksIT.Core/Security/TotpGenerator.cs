@@ -1,4 +1,5 @@
-﻿using System.Security.Cryptography;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Security.Cryptography;
 
 namespace MaksIT.Core.Security;
 
@@ -6,7 +7,13 @@ public static class TotpGenerator {
   private const int Timestep = 30; // Time step in seconds (standard is 30 seconds)
   private const int TotpDigits = 6; // Standard TOTP length is 6 digits
 
-  public static bool TryValidate(string totpCode, string base32Secret, int timeTolerance, out bool isValid, out string? errorMessage) {
+  public static bool TryValidate(
+    string totpCode,
+    string base32Secret,
+    int timeTolerance,
+    out bool isValid,
+    [NotNullWhen(false)] out string? errorMessage
+  ) {
     try {
       // Convert the Base32 encoded secret to a byte array
       if (!Base32Encoder.TryDecode(base32Secret, out byte[]? secretBytes, out errorMessage)) {
@@ -38,7 +45,12 @@ public static class TotpGenerator {
     }
   }
 
-  public static bool TryGenerate(string base32Secret, long timestep, out string? totpCode, out string? errorMessage) {
+  public static bool TryGenerate(
+    string base32Secret,
+    long timestep,
+    [NotNullWhen(true)] out string? totpCode,
+    [NotNullWhen(false)] out string? errorMessage
+  ) {
     try {
       // Convert the Base32 encoded secret to a byte array
       if (!Base32Encoder.TryDecode(base32Secret, out byte[]? secretBytes, out errorMessage)) {
@@ -86,7 +98,10 @@ public static class TotpGenerator {
     return unixTimestamp / Timestep;
   }
 
-  public static bool TryGenerateSecret(out string? secret, out string? errorMessage) {
+  public static bool TryGenerateSecret(
+    [NotNullWhen(true)] out string? secret,
+    [NotNullWhen(false)] out string? errorMessage
+  ) {
     try {
       // Example of generating a 32-character base32 secret for TOTP
       var random = new byte[20];
@@ -108,7 +123,11 @@ public static class TotpGenerator {
     }
   }
 
-  public static bool TryGenerateRecoveryCodes(int defaultCodeCount, out List<string>? recoveryCodes, out string? errorMessage) {
+  public static bool TryGenerateRecoveryCodes(
+    int defaultCodeCount,
+    [NotNullWhen(true)] out List<string>? recoveryCodes,
+    [NotNullWhen(false)] out string? errorMessage
+  ) {
     try {
       recoveryCodes = new List<string>();
 
@@ -128,7 +147,17 @@ public static class TotpGenerator {
     }
   }
 
-  public static bool TryGenerateTotpAuthLink(string label, string username, string twoFactoSharedKey, string issuer, string? algorithm, int? digits, int? period, out string? authLink, out string? errorMessage) {
+  public static bool TryGenerateTotpAuthLink(
+    string label,
+    string username,
+    string twoFactoSharedKey,
+    string issuer,
+    string? algorithm,
+    int? digits,
+    int? period,
+    [NotNullWhen(true)] out string? authLink,
+    [NotNullWhen(false)] out string? errorMessage
+  ) {
     try {
       var queryParams = new List<string> {
                 $"secret={Uri.EscapeDataString(twoFactoSharedKey)}",

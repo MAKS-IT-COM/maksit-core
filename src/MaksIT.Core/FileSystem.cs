@@ -1,5 +1,7 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 using MaksIT.Core.Extensions;
+
 
 namespace MaksIT.Core;
 
@@ -18,7 +20,7 @@ public static class FileSystem {
   /// <param name="overwrite">Whether to overwrite existing files.</param>
   /// <param name="errorMessage">The error message if the operation fails.</param>
   /// <returns>True if the copy operation was successful; otherwise, false.</returns>
-  public static bool TryCopyToFolder(string sourcePath, string destDirPath, bool overwrite, out string? errorMessage) {
+  public static bool TryCopyToFolder(string sourcePath, string destDirPath, bool overwrite, [NotNullWhen(false)] out string? errorMessage) {
     try {
       if (!Directory.Exists(destDirPath)) {
         Directory.CreateDirectory(destDirPath);
@@ -58,7 +60,7 @@ public static class FileSystem {
   /// <param name="itemPath">File or directory path.</param>
   /// <param name="errorMessage">The error message if the operation fails.</param>
   /// <returns>True if the delete operation was successful; otherwise, false.</returns>
-  public static bool TryDeleteFileOrDirectory(string itemPath, out string? errorMessage) {
+  public static bool TryDeleteFileOrDirectory(string itemPath, [NotNullWhen(false)] out string? errorMessage) {
     try {
       if (File.Exists(itemPath)) {
         File.Delete(itemPath);
@@ -169,7 +171,7 @@ public static class FileSystem {
     var count = 1;
     while (File.Exists(newFullPath)) {
       var tempFileName = $"{fileNameOnly}({count++})";
-      newFullPath = Path.Combine(path, tempFileName + extension);
+      newFullPath = Path.Combine(path, $"{tempFileName}{extension}");
     }
 
     return newFullPath;

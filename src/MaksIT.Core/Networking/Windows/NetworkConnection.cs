@@ -1,7 +1,8 @@
-﻿using Microsoft.Extensions.Logging;
-using System;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Runtime.InteropServices;
+using Microsoft.Extensions.Logging;
+
 
 namespace MaksIT.Core.Networking.Windows;
 
@@ -15,11 +16,12 @@ public class NetworkConnection : IDisposable {
   }
 
   public static bool TryCreate(
-      ILogger<NetworkConnection> logger,
-      string networkName,
-      NetworkCredential credentials,
-      out NetworkConnection? networkConnection,
-      out string? errorMessage) {
+    ILogger<NetworkConnection> logger,
+    string networkName,
+    NetworkCredential credentials,
+    [NotNullWhen(true)] out NetworkConnection? networkConnection,
+    [NotNullWhen(false)] out string? errorMessage
+  ) {
     try {
       if (!OperatingSystem.IsWindows()) {
         throw new PlatformNotSupportedException("NetworkConnection is only supported on Windows.");
@@ -81,7 +83,7 @@ public class NetworkConnection : IDisposable {
     public ResourceDisplayType DisplayType;
     public int Usage;
     public string? LocalName;
-    public string RemoteName;
+    public string? RemoteName;
     public string? Comment;
     public string? Provider;
   }

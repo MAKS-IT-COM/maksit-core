@@ -1,7 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Text;
+using System.Diagnostics.CodeAnalysis;
+
 
 namespace MaksIT.Core.Security;
 
@@ -9,7 +8,11 @@ public static class Base32Encoder {
   private static readonly char[] Base32Alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567".ToCharArray();
   private const string PaddingChar = "=";
 
-  public static bool TryEncode(byte[] data, out string? encoded, out string? errorMessage) {
+  public static bool TryEncode(
+    byte[] data,
+    [NotNullWhen(true)] out string? encoded,
+    [NotNullWhen(false)] out string? errorMessage
+  ) {
     try {
       if (data == null || data.Length == 0) {
         throw new ArgumentNullException(nameof(data));
@@ -57,7 +60,11 @@ public static class Base32Encoder {
     }
   }
 
-  public static bool TryDecode(string base32, out byte[]? decoded, out string? errorMessage) {
+  public static bool TryDecode(
+    string base32,
+    [NotNullWhen(true)] out byte[]? decoded,
+    [NotNullWhen(false)] out string? errorMessage
+  ) {
     try {
       if (string.IsNullOrEmpty(base32)) {
         throw new ArgumentNullException(nameof(base32));

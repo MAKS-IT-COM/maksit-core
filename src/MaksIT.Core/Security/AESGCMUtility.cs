@@ -1,4 +1,6 @@
 ﻿using System.Security.Cryptography;
+using System.Diagnostics.CodeAnalysis;
+
 
 namespace MaksIT.Core.Security;
 
@@ -9,7 +11,12 @@ public static class AESGCMUtility {
   private const int IvLength = 12; // 12 bytes for AES-GCM IV
   private const int TagLength = 16; // 16 bytes for AES-GCM Tag
 
-  public static bool TryEncryptData(byte[] data, string base64Key, out byte[]? result, out string? errorMessage) {
+  public static bool TryEncryptData(
+    byte[] data,
+    string base64Key,
+    [NotNullWhen(true)] out byte[]? result,
+    [NotNullWhen(false)] out string? errorMessage
+  ) {
     try {
       var key = Convert.FromBase64String(base64Key);
       using (AesGcm aesGcm = new AesGcm(key, AesGcm.TagByteSizes.MaxSize)) {
@@ -38,7 +45,12 @@ public static class AESGCMUtility {
     }
   }
 
-  public static bool TryDecryptData(byte[] data, string base64Key, out byte[]? decryptedData, out string? errorMessage) {
+  public static bool TryDecryptData(
+    byte[] data,
+    string base64Key,
+    [NotNullWhen(true)] out byte[]? decryptedData,
+    [NotNullWhen(false)] out string? errorMessage
+  ) {
     try {
       var key = Convert.FromBase64String(base64Key);
 

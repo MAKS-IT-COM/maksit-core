@@ -3,6 +3,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
+using System.Diagnostics.CodeAnalysis;
 
 namespace MaksIT.Core.Security;
 
@@ -14,7 +15,16 @@ public class JWTTokenClaims {
 }
 
 public static class JwtGenerator {
-  public static bool TryGenerateToken(string secret, string issuer, string audience, double expiration, string username, List<string> roles, out (string, JWTTokenClaims)? tokenData, out string? errorMessage) {
+  public static bool TryGenerateToken(
+    string secret,
+    string issuer,
+    string audience,
+    double expiration,
+    string username,
+    List<string> roles,
+    [NotNullWhen(true)] out (string, JWTTokenClaims)? tokenData,
+    [NotNullWhen(false)] out string? errorMessage
+  ) {
     try {
       var secretKey = GetSymmetricSecurityKey(secret);
       var credentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
@@ -62,7 +72,14 @@ public static class JwtGenerator {
 
   public static string GenerateSecret(int keySize = 32) => Convert.ToBase64String(GetRandomBytes(keySize));
 
-  public static bool TryValidateToken(string secret, string issuer, string audience, string token, out JWTTokenClaims? tokenClaims, out string? errorMessage) {
+  public static bool TryValidateToken(
+    string secret,
+    string issuer,
+    string audience,
+    string token,
+    out JWTTokenClaims? tokenClaims,
+    [NotNullWhen(false)] out string? errorMessage
+  ) {
     try {
       var key = Encoding.UTF8.GetBytes(secret);
       var tokenHandler = new JwtSecurityTokenHandler();
