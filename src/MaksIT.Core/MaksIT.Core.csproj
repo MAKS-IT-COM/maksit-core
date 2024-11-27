@@ -8,12 +8,12 @@
 
     <!-- NuGet package metadata -->
     <PackageId>MaksIT.Core</PackageId>
-    <Version>1.1.9</Version>
+    <Version>1.2.0</Version>
     <Authors>Maksym Sadovnychyy</Authors>
     <Company>MAKS-IT</Company>
     <Product>MaksIT.Core</Product>
     <Description>MaksIT.Core is a collection of helper methods and extensions for .NET projects, designed to simplify common tasks and improve code readability. The library includes extensions for `Guid`, `string`, `Object`, and a base class for creating enumeration types.</Description>
-    <PackageTags>dotnet;enumeration;string;guid;object;parsers;extensions</PackageTags>
+    <PackageTags>dotnet;enumeration;string;guid;object;parsers;extensions;jwt;aes;crc32;</PackageTags>
     <RepositoryUrl>https://github.com/MAKS-IT-COM/maksit-core</RepositoryUrl>
     <License>MIT</License>
     <RequireLicenseAcceptance>false</RequireLicenseAcceptance>
@@ -25,10 +25,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Cryptography.KeyDerivation" Version="8.0.8" />
+    <PackageReference Include="Microsoft.AspNetCore.Cryptography.KeyDerivation" Version="9.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="9.0.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.0" />
-    <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.1.0" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.1.0" />
+    <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.2.1" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.2.1" />
   </ItemGroup>
 </Project>
