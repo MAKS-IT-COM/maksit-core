@@ -1997,7 +1997,7 @@ var patch = new SomePatchRequestModel {
     Username = "Updated Name"
 
     Operations = new Dictionary<string, PatchOperation> {
-        { "Username", PartchOperation.Replace }
+        { "Username", PartchOperation.SetField }
     }
 };
 

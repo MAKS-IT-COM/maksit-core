@@ -23,5 +23,11 @@ public abstract class PatchRequestModelBase : RequestModelBase {
     if (!HasNonNullPatchField) {
       yield return new ValidationResult("At least one patch field must be provided", new string[] { "PatchField" });
     }
+
+    foreach (var operation in Operations) {
+      if (!Enum.IsDefined(typeof(PatchOperation), operation.Value)) {
+        yield return new ValidationResult($"Invalid patch operation '{operation.Value}' for property '{operation.Key}'", new string[] { operation.Key });
+      }
+    }
   }
 }

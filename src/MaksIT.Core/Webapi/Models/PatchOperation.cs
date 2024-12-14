@@ -3,22 +3,37 @@
 public enum PatchOperation {
 
   /// <summary>
-  /// When you need to replace some field, or relpace item in collection
+  /// When you need to set or replace a normal field
   /// </summary>
-  Replace,
+  SetField,
 
   /// <summary>
-  /// When you need to set some field, or add item to collection
+  /// When you need to set a normal field to null
   /// </summary>
-  Add,
+  RemoveField,
 
   /// <summary>
-  /// When you need to set some field to null, or remove item from collection
+  /// When you need to add an item to a collection
   /// </summary>
-  Remove,
+  AddToCollection,
 
   /// <summary>
-  /// When you need to clear collection
+  /// When you need to remove an item from a collection
   /// </summary>
-  Clear
+  RemoveFromCollection,
+
+  /// <summary>
+  /// When you need to replace a collection
+  /// </summary>
+  ReplaceCollection,
+
+  /// <summary>
+  /// When you need to clear a collection
+  /// </summary>
+  ClearCollection,
+
+  /// <summary>
+  /// When you need to set a collection to null
+  /// </summary>
+  RemoveCollection
 }
