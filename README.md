@@ -1945,22 +1945,7 @@ var response = new PagedResponse<User>(users, totalCount: 100, pageNumber: 1, pa
 
 ---
 
-#### **3. `PatchField<T>`**
-
-##### Summary
-Represents a patch operation on a specific field or value, used for partial updates in Web APIs.
-
-##### Usage
-```csharp
-var patchField = new PatchField<string> {
-    Operation = PatchOperation.Replace,
-    Value = "New Value"
-};
-```
-
----
-
-#### **4. `PatchOperation`**
+#### **3. `PatchOperation`**
 
 ##### Summary
 Enumerates the types of patch operations that can be performed on a field or collection.
@@ -2008,13 +1993,18 @@ Console.WriteLine($"Total Pages: {pagedResponse.TotalPages}");
 
 ### Partial Updates Using PatchField
 ```csharp
-var patch = new PatchField<string> {
-    Operation = PatchOperation.Replace,
-    Value = "Updated Name"
+var patch = new SomePatchRequestModel {
+    Username = "Updated Name"
+
+    Operations = new Dictionary<string, PatchOperation> {
+        { "Username", PartchOperation.Replace }
+    }
 };
 
 // Deconstruct the patch field
-var (operation, value) = patch;
+var usernmae = patch.Username;
+var operation = GetOperation(nameOf(patch.Username);
+
 Console.WriteLine($"Operation: {operation}, Value: {value}");
 ```
 
