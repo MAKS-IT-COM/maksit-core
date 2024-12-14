@@ -15,8 +15,8 @@ public abstract class PatchRequestModelBase : RequestModelBase {
     .Where(prop => prop.Name != nameof(Operations))
     .Any(prop => prop.GetValue(this) != null);
 
-  public PatchOperation GetOperation(string propertyName) {
-    return Operations[propertyName];
+  public bool TryGetOperation(string propertyName, out PatchOperation operation) {
+    return Operations.TryGetValue(propertyName, out operation);
   }
 
   public override IEnumerable<ValidationResult> Validate(ValidationContext validationContext) {

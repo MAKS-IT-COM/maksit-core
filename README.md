@@ -2001,11 +2001,13 @@ var patch = new SomePatchRequestModel {
     }
 };
 
-// Deconstruct the patch field
+// Extract operation per field
 var usernmae = patch.Username;
-var operation = GetOperation(nameOf(patch.Username);
+if (TryGetOperation(nameOf(patch.Username), out operation)) {
+  Console.WriteLine($"Operation: {operation}, Value: {value}");
+}
 
-Console.WriteLine($"Operation: {operation}, Value: {value}");
+
 ```
 
 ---
