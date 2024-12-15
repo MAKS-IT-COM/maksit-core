@@ -16,7 +16,15 @@ public abstract class PatchRequestModelBase : RequestModelBase {
     .Where(prop => prop.Name != nameof(Operations))
     .Any(prop => prop.GetValue(this) != null);
 
+  /// <summary>
+  /// Attempts to retrieve the patch operation associated with the specified property name (case insensitive).
+  /// </summary>
+  /// <param name="propertyName">The name of the property for which to retrieve the patch operation.</param>
+  /// <param name="operation">When this method returns, contains the patch operation associated with the specified property name, if the key is found; otherwise, null.</param>
+  /// <returns>true if the patch operation is found; otherwise, false.</returns>
   public bool TryGetOperation(string propertyName, [NotNullWhen(true)] out PatchOperation? operation) {
+    propertyName = propertyName.ToLower();
+
     if (Operations == null) {
       operation = null;
       return false;
