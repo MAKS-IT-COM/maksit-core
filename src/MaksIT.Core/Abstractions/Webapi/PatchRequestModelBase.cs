@@ -23,15 +23,14 @@ public abstract class PatchRequestModelBase : RequestModelBase {
   /// <param name="operation">When this method returns, contains the patch operation associated with the specified property name, if the key is found; otherwise, null.</param>
   /// <returns>true if the patch operation is found; otherwise, false.</returns>
   public bool TryGetOperation(string propertyName, [NotNullWhen(true)] out PatchOperation? operation) {
-    propertyName = propertyName.ToLower();
-
     if (Operations == null) {
       operation = null;
       return false;
     }
 
-    if (Operations.TryGetValue(propertyName, out var tempOperation)) {
-      operation = tempOperation;
+    var entry = Operations.FirstOrDefault(op => op.Key.Equals(propertyName, StringComparison.OrdinalIgnoreCase));
+    if (!entry.Equals(default(KeyValuePair<string, PatchOperation>))) {
+      operation = entry.Value;
       return true;
     }
     else {
