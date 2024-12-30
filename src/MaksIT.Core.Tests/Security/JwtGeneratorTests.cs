@@ -4,17 +4,21 @@ using MaksIT.Core.Security;
 
 namespace MaksIT.Core.Tests.Security {
   public class JwtGeneratorTests {
-    private const string Secret = "supersecretkey12345678901234567890";
-    private const string Issuer = "testIssuer";
-    private const string Audience = "testAudience";
-    private const double Expiration = 30; // 30 minutes
-    private const string Username = "testUser";
-    private readonly List<string> Roles = new List<string> { "Admin", "User" };
 
-    [Fact]
+
+    private JWTTokenGenerateRequest jWTTokenGenerateRequest = new JWTTokenGenerateRequest {
+    Secret = "supersecretkey12345678901234567890",
+    Issuer = "testIssuer",
+    Audience = "testAudience",
+    Expiration = 30, // 30 minutes
+    Username = "testUser",
+    Roles = new List<string> { "Admin", "User" },
+  };
+
+  [Fact]
     public void GenerateToken_ShouldReturnValidToken() {
       // Act
-      var result = JwtGenerator.TryGenerateToken(Secret, Issuer, Audience, Expiration, Username, Roles, out var tokenData, out var errorMessage);
+      var result = JwtGenerator.TryGenerateToken(jWTTokenGenerateRequest, out var tokenData, out var errorMessage);
 
       // Assert
       Assert.True(result);
@@ -26,15 +30,15 @@ namespace MaksIT.Core.Tests.Security {
     [Fact]
     public void ValidateToken_ShouldReturnClaimsPrincipal_WhenTokenIsValid() {
       // Arrange
-      JwtGenerator.TryGenerateToken(Secret, Issuer, Audience, Expiration, Username, Roles, out var tokenData, out var generateErrorMessage);
+      JwtGenerator.TryGenerateToken(jWTTokenGenerateRequest, out var tokenData, out var generateErrorMessage);
 
       // Act
-      var result = JwtGenerator.TryValidateToken(Secret, Issuer, Audience, tokenData?.Item1, out var jwtTokenClaims, out var validateErrorMessage);
+      var result = JwtGenerator.TryValidateToken(jWTTokenGenerateRequest.Secret, jWTTokenGenerateRequest.Issuer, jWTTokenGenerateRequest.Audience, tokenData?.Item1, out var jwtTokenClaims, out var validateErrorMessage);
 
       // Assert
       Assert.True(result);
       Assert.NotNull(jwtTokenClaims);
-      Assert.Equal(Username, jwtTokenClaims?.Username);
+      Assert.Equal(jWTTokenGenerateRequest.Username, jwtTokenClaims?.Username);
       Assert.Contains(jwtTokenClaims?.Roles ?? new List<string>(), c => c == "Admin");
       Assert.Contains(jwtTokenClaims?.Roles ?? new List<string>(), c => c == "User");
       Assert.Null(validateErrorMessage);
@@ -46,7 +50,7 @@ namespace MaksIT.Core.Tests.Security {
       var invalidToken = "invalidToken";
 
       // Act
-      var result = JwtGenerator.TryValidateToken(Secret, Issuer, Audience, invalidToken, out var jwtTokenClaims, out var errorMessage);
+      var result = JwtGenerator.TryValidateToken(jWTTokenGenerateRequest.Secret, jWTTokenGenerateRequest.Issuer, jWTTokenGenerateRequest.Audience, invalidToken, out var jwtTokenClaims, out var errorMessage);
 
       // Assert
       Assert.False(result);

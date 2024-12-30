@@ -1,125 +1,171 @@
-﻿
-using MaksIT.Core.Webapi.Models;
-
-namespace MaksIT.Core.Tests.Webapi.Models;
+﻿namespace MaksIT.Core.Tests.Webapi.Models;
 
 public class PagedRequestTests {
 
-  [Fact]
-  public void BuildFilterExpression_ShouldHandleEqualsOperator() {
-    // Arrange
-    var request = new PagedRequest {
-      Filters = "Name='John'"
-    };
+  public class TestEntity {
+    public string? Name { get; set; }
+    public int Age { get; set; }
+  }
 
-    // Act
-    var expression = request.BuildFilterExpression<TestEntity>(request.Filters);
-    var compiled = expression!.Compile();
-
-    // Assert
-    var testEntity = new TestEntity { Name = "John" };
-    Assert.True(compiled(testEntity));
+  // Setup a mock IQueryable to test against
+  private IQueryable<TestEntity> GetTestQueryable() {
+    return new List<TestEntity> {
+            new TestEntity { Name = "John", Age = 31 },
+            new TestEntity { Name = "Jane", Age = 29 },
+            new TestEntity { Name = "Doe", Age = 35 }
+        }.AsQueryable();
   }
 
   [Fact]
-  public void BuildFilterExpression_ShouldHandleNotEqualsOperator() {
+  public void ApplyFilters_ShouldHandleEqualsOperator() {
     // Arrange
+    var queryable = GetTestQueryable();
     var request = new PagedRequest {
-      Filters = "Name!='John'"
+      Filters = "Name == \"John\""
     };
 
     // Act
-    var expression = request.BuildFilterExpression<TestEntity>(request.Filters);
-    var compiled = expression!.Compile();
+    var filtered = request.ApplyFilters(queryable);
 
     // Assert
-    var testEntity = new TestEntity { Name = "John" };
-    Assert.False(compiled(testEntity));
+    Assert.Contains(filtered, t => t.Name == "John");
+    Assert.Single(filtered);
   }
 
   [Fact]
-  public void BuildFilterExpression_ShouldHandleGreaterThanOperator() {
+  public void ApplyFilters_ShouldHandleNotEqualsOperator() {
     // Arrange
+    var queryable = GetTestQueryable();
     var request = new PagedRequest {
-      Filters = "Age>30"
+      Filters = "Name != \"John\""
     };
 
     // Act
-    var expression = request.BuildFilterExpression<TestEntity>(request.Filters);
-    var compiled = expression!.Compile();
+    var filtered = request.ApplyFilters(queryable);
 
     // Assert
-    var testEntity = new TestEntity { Age = 31 };
-    Assert.True(compiled(testEntity));
+    Assert.DoesNotContain(filtered, t => t.Name == "John");
   }
 
   [Fact]
-  public void BuildFilterExpression_ShouldHandleLessThanOperator() {
+  public void ApplyFilters_ShouldHandleGreaterThanOperator() {
     // Arrange
+    var queryable = GetTestQueryable();
     var request = new PagedRequest {
-      Filters = "Age<30"
+      Filters = "Age > 30"
     };
 
     // Act
-    var expression = request.BuildFilterExpression<TestEntity>(request.Filters);
-    var compiled = expression!.Compile();
+    var filtered = request.ApplyFilters(queryable);
 
     // Assert
-    var testEntity = new TestEntity { Age = 29 };
-    Assert.True(compiled(testEntity));
+    Assert.All(filtered, t => Assert.True(t.Age > 30));
   }
 
   [Fact]
-  public void BuildFilterExpression_ShouldHandleAndOperator() {
+  public void ApplyFilters_ShouldHandleLessThanOperator() {
     // Arrange
+    var queryable = GetTestQueryable();
     var request = new PagedRequest {
-      Filters = "Name='John' && Age>30"
+      Filters = "Age < 30"
     };
 
     // Act
-    var expression = request.BuildFilterExpression<TestEntity>(request.Filters);
-    var compiled = expression!.Compile();
+    var filtered = request.ApplyFilters(queryable);
 
     // Assert
-    var testEntity = new TestEntity { Name = "John", Age = 31 };
-    Assert.True(compiled(testEntity));
+    Assert.All(filtered, t => Assert.True(t.Age < 30));
   }
 
   [Fact]
-  public void BuildFilterExpression_ShouldHandleOrOperator() {
+  public void ApplyFilters_ShouldHandleAndOperator() {
     // Arrange
+    var queryable = GetTestQueryable();
     var request = new PagedRequest {
-      Filters = "Name='John' || Age>30"
+      Filters = "Name == \"John\" && Age > 30"
     };
 
     // Act
-    var expression = request.BuildFilterExpression<TestEntity>(request.Filters);
-    var compiled = expression!.Compile();
+    var filtered = request.ApplyFilters(queryable);
 
     // Assert
-    var testEntity = new TestEntity { Name = "Doe", Age = 31 };
-    Assert.True(compiled(testEntity));
+    Assert.Contains(filtered, t => t.Name == "John" && t.Age > 30);
+    Assert.Single(filtered);
   }
 
   [Fact]
-  public void BuildFilterExpression_ShouldHandleNegation() {
+  public void ApplyFilters_ShouldHandleOrOperator() {
     // Arrange
+    var queryable = GetTestQueryable();
     var request = new PagedRequest {
-      Filters = "!Name='John'"
+      Filters = "Name == \"John\" || Age > 30"
     };
 
     // Act
-    var expression = request.BuildFilterExpression<TestEntity>(request.Filters);
-    var compiled = expression!.Compile();
+    var filtered = request.ApplyFilters(queryable);
 
     // Assert
-    var testEntity = new TestEntity { Name = "Doe" };
-    Assert.True(compiled(testEntity));
+    Assert.Contains(filtered, t => t.Name == "John" || t.Age > 30);
   }
-}
 
-// Helper class for testing purposes
-public class TestEntity {
-  public string? Name { get; set; }
-  public int Age { get; set; }
+  [Fact]
+  public void ApplyFilters_ShouldHandleNegation() {
+    // Arrange
+    var queryable = GetTestQueryable();
+    var request = new PagedRequest {
+      Filters = "!(Name == \"John\")"
+    };
+
+    // Act
+    var filtered = request.ApplyFilters(queryable);
+
+    // Assert
+    Assert.DoesNotContain(filtered, t => t.Name == "John");
+  }
+
+  [Fact]
+  public void ApplyFilters_ShouldHandleContainsOperator() {
+    // Arrange
+    var queryable = GetTestQueryable();
+    var request = new PagedRequest {
+      Filters = "Name.Contains(\"oh\")"
+    };
+
+    // Act
+    var filtered = request.ApplyFilters(queryable);
+
+    // Assert
+    Assert.Contains(filtered, t => t.Name.Contains("oh"));
+  }
+
+  [Fact]
+  public void ApplyFilters_ShouldHandleStartsWithOperator() {
+    // Arrange
+    var queryable = GetTestQueryable();
+    var request = new PagedRequest {
+      Filters = "Name.StartsWith(\"Jo\")"
+    };
+
+    // Act
+    var filtered = request.ApplyFilters(queryable);
+
+    // Assert
+    Assert.Contains(filtered, t => t.Name.StartsWith("John"));
+    Assert.Single(filtered); // Assuming only "Johnny" starts with "John"
+  }
+
+  [Fact]
+  public void ApplyFilters_ShouldHandleEndsWithOperator() {
+    // Arrange
+    var queryable = GetTestQueryable();
+    var request = new PagedRequest {
+      Filters = "Name.EndsWith(\"hn\")"
+    };
+
+    // Act
+    var filtered = request.ApplyFilters(queryable);
+
+    // Assert
+    Assert.Contains(filtered, t => t.Name.EndsWith("hn"));
+  }
 }
