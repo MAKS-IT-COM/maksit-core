@@ -1,5 +1,5 @@
 ﻿using System.Linq.Dynamic.Core;
-
+using System.Linq.Expressions;
 using MaksIT.Core.Abstractions.Webapi;
 
 public class PagedRequest : RequestModelBase {
@@ -10,16 +10,22 @@ public class PagedRequest : RequestModelBase {
   public string? SortBy { get; set; }
   public bool IsAscending { get; set; } = true;
 
-  public IQueryable<T> ApplyFilters<T>(IQueryable<T> query) {
-    if (!string.IsNullOrWhiteSpace(Filters)) {
-      query = query.Where(Filters); // Filters interpreted directly
-    }
+  public Expression<Func<T, bool>> BuildFilterExpression<T>() {
+    if (string.IsNullOrWhiteSpace(Filters))
+      return x => true; // Returns an expression that doesn't filter anything.
 
-    if (!string.IsNullOrWhiteSpace(SortBy)) {
-      var direction = IsAscending ? "ascending" : "descending";
-      query = query.OrderBy($"{SortBy} {direction}");
-    }
+    // Parse the filter string into a dynamic lambda expression.
+    var predicate = DynamicExpressionParser.ParseLambda<T, bool>(
+        new ParsingConfig(), false, Filters);
+    return predicate;
+  }
 
-    return query.Skip((PageNumber - 1) * PageSize).Take(PageSize);
+  public Func<IQueryable<T>, IOrderedQueryable<T>> BuildSortExpression<T>() {
+    if (string.IsNullOrWhiteSpace(SortBy))
+      return q => (IOrderedQueryable<T>)q; // Cast to IOrderedQueryable
+
+    var direction = IsAscending ? "ascending" : "descending";
+    // Return a Func that takes an IQueryable and applies the sorting to it.
+    return q => (IOrderedQueryable<T>)q.OrderBy($"{SortBy} {direction}");
   }
 }
