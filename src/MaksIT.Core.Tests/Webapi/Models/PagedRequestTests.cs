@@ -2,6 +2,8 @@
 using Xunit;
 using MaksIT.Core.Webapi.Models;  // Ensure namespace matches the actual namespace of PagedRequest
 
+namespace MaksIT.Core.Tests.Webapi.Models;
+
 public class PagedRequestTests {
 
   public class TestEntity {

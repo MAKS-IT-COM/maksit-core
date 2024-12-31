@@ -1,5 +1,6 @@
 ﻿using System.Linq.Dynamic.Core;
 using System.Linq.Expressions;
+using System.Text.RegularExpressions;
 using MaksIT.Core.Abstractions.Webapi;
 
 public class PagedRequest : RequestModelBase {
@@ -14,11 +15,25 @@ public class PagedRequest : RequestModelBase {
     if (string.IsNullOrWhiteSpace(Filters))
       return x => true; // Returns an expression that doesn't filter anything.
 
-    // Parse the filter string into a dynamic lambda expression.
+    // Adjust Filters to make Contains, StartsWith, EndsWith, ==, and != case-insensitive
+    string adjustedFilters = Filters
+        .Replace(".Contains(", ".ToLower().Contains(")
+        .Replace(".StartsWith(", ".ToLower().StartsWith(")
+        .Replace(".EndsWith(", ".ToLower().EndsWith(")
+        .Replace("==", ".ToLower() ==")
+        .Replace("!=", ".ToLower() !=");
+
+    // Ensure values are also transformed to lowercase
+    adjustedFilters = Regex.Replace(adjustedFilters, "\"([^\"]+)\"", m => $"\"{m.Groups[1].Value.ToLower()}\"");
+
+    // Parse the adjusted filter string into a dynamic lambda expression
     var predicate = DynamicExpressionParser.ParseLambda<T, bool>(
-        new ParsingConfig(), false, Filters);
+        new ParsingConfig(), false, adjustedFilters);
+
     return predicate;
   }
+
+
 
   public Func<IQueryable<T>, IOrderedQueryable<T>> BuildSortExpression<T>() {
     if (string.IsNullOrWhiteSpace(SortBy))
