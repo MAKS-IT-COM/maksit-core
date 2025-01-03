@@ -15,16 +15,35 @@ public class PagedRequest : RequestModelBase {
     if (string.IsNullOrWhiteSpace(Filters))
       return x => true; // Returns an expression that doesn't filter anything.
 
-    // Adjust Filters to make Contains, StartsWith, EndsWith, ==, and != case-insensitive
-    string adjustedFilters = Filters
-        .Replace(".Contains(", ".ToLower().Contains(")
-        .Replace(".StartsWith(", ".ToLower().StartsWith(")
-        .Replace(".EndsWith(", ".ToLower().EndsWith(")
-        .Replace("==", ".ToLower() ==")
-        .Replace("!=", ".ToLower() !=");
+    // Get the type of T
+    var type = typeof(T);
 
-    // Ensure values are also transformed to lowercase
-    adjustedFilters = Regex.Replace(adjustedFilters, "\"([^\"]+)\"", m => $"\"{m.Groups[1].Value.ToLower()}\"");
+    // Adjust Filters to make Contains, StartsWith, EndsWith, ==, and != case-insensitive
+    string adjustedFilters = Filters;
+
+    // Regex to find property names and methods
+    adjustedFilters = Regex.Replace(adjustedFilters, @"(\w+)\.(Contains|StartsWith|EndsWith)\(\""(.*?)\""\)", m => {
+      var propertyName = m.Groups[1].Value;
+      var method = m.Groups[2].Value;
+      var value = m.Groups[3].Value;
+      var property = type.GetProperty(propertyName);
+      if (property != null && property.PropertyType == typeof(string)) {
+        return $"{propertyName}.ToLower().{method}(\"{value.ToLower()}\")";
+      }
+      return m.Value;
+    });
+
+    // Regex to find equality and inequality comparisons
+    adjustedFilters = Regex.Replace(adjustedFilters, @"(\w+)\s*(==|!=)\s*\""(.*?)\""", m => {
+      var propertyName = m.Groups[1].Value;
+      var comparison = m.Groups[2].Value;
+      var value = m.Groups[3].Value;
+      var property = type.GetProperty(propertyName);
+      if (property != null && property.PropertyType == typeof(string)) {
+        return $"{propertyName}.ToLower() {comparison} \"{value.ToLower()}\"";
+      }
+      return m.Value;
+    });
 
     // Parse the adjusted filter string into a dynamic lambda expression
     var predicate = DynamicExpressionParser.ParseLambda<T, bool>(
