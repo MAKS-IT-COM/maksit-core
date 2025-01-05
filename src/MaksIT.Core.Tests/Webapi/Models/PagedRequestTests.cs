@@ -1,6 +1,7 @@
 ﻿using System.Linq;
 using Xunit;
-using MaksIT.Core.Webapi.Models;  // Ensure namespace matches the actual namespace of PagedRequest
+using MaksIT.Core.Webapi.Models;
+using MaksIT.Core.Extensions;  // Ensure namespace matches the actual namespace of PagedRequest
 
 namespace MaksIT.Core.Tests.Webapi.Models;
 
@@ -9,6 +10,11 @@ public class PagedRequestTests {
   public class TestEntity {
     public required string Name { get; set; }
     public required int Age { get; set; }
+  }
+
+  public class Application {
+    public required string Name { get; set; }
+    public Guid OrganizationId { get; set; }
   }
 
   // Setup a mock IQueryable to test against
@@ -20,12 +26,19 @@ public class PagedRequestTests {
         }.AsQueryable();
   }
 
+  private IQueryable<Application> GetApplicationsTestQueryable() {
+    return new List<Application> {
+      new Application { Name = "NuGet", OrganizationId = "e1a92b8e-9f3f-4b3f-80c3-01941360e1fe".ToGuid()}
+    }.AsQueryable();
+  
+  }
+
   [Fact]
   public void BuildFilterExpression_ShouldHandleEqualsOperator() {
     // Arrange
     var queryable = GetTestQueryable();
     var request = new PagedRequest {
-      Filters = "Name == \"John\""
+      Filters = "name == \"John\""
     };
 
     // Act
@@ -42,20 +55,20 @@ public class PagedRequestTests {
   public void BuildFilterExpression_ShouldHandleNotEqualsOperator() {
     var queryable = GetTestQueryable();
     var request = new PagedRequest {
-      Filters = "Name != \"John\""
+      Filters = "name != \"John\""
     };
 
     var predicate = request.BuildFilterExpression<TestEntity>();
     var filtered = queryable.Where(predicate).ToList();
 
-    Assert.DoesNotContain(filtered, t => t.Name == "John");
+    Assert.DoesNotContain(filtered, t => t.Name == "john");
   }
 
   [Fact]
   public void BuildFilterExpression_ShouldHandleGreaterThanOperator() {
     var queryable = GetTestQueryable();
     var request = new PagedRequest {
-      Filters = "Age > 30"
+      Filters = "age > 30"
     };
 
     var predicate = request.BuildFilterExpression<TestEntity>();
@@ -68,7 +81,7 @@ public class PagedRequestTests {
   public void BuildFilterExpression_ShouldHandleLessThanOperator() {
     var queryable = GetTestQueryable();
     var request = new PagedRequest {
-      Filters = "Age < 30"
+      Filters = "age < 30"
     };
 
     var predicate = request.BuildFilterExpression<TestEntity>();
@@ -81,7 +94,7 @@ public class PagedRequestTests {
   public void BuildFilterExpression_ShouldHandleAndOperator() {
     var queryable = GetTestQueryable();
     var request = new PagedRequest {
-      Filters = "Name == \"John\" && Age > 30"
+      Filters = "name == \"john\" && age > 30"
     };
 
     var predicate = request.BuildFilterExpression<TestEntity>();
@@ -95,7 +108,7 @@ public class PagedRequestTests {
   public void BuildFilterExpression_ShouldHandleOrOperator() {
     var queryable = GetTestQueryable();
     var request = new PagedRequest {
-      Filters = "Name == \"John\" || Age > 30"
+      Filters = "name == \"john\" || age > 30"
     };
 
     var predicate = request.BuildFilterExpression<TestEntity>();
@@ -108,7 +121,7 @@ public class PagedRequestTests {
   public void BuildFilterExpression_ShouldHandleNegation() {
     var queryable = GetTestQueryable();
     var request = new PagedRequest {
-      Filters = "!(Name == \"John\")"
+      Filters = "!(name == \"john\")"
     };
 
     var predicate = request.BuildFilterExpression<TestEntity>();
@@ -121,7 +134,7 @@ public class PagedRequestTests {
   public void BuildFilterExpression_ShouldHandleContainsOperator() {
     var queryable = GetTestQueryable();
     var request = new PagedRequest {
-      Filters = "Name.Contains(\"oh\")"
+      Filters = "name.Contains(\"oh\")"
     };
 
     var predicate = request.BuildFilterExpression<TestEntity>();
@@ -134,7 +147,7 @@ public class PagedRequestTests {
   public void BuildFilterExpression_ShouldHandleStartsWithOperator() {
     var queryable = GetTestQueryable();
     var request = new PagedRequest {
-      Filters = "Name.StartsWith(\"Jo\")"
+      Filters = "name.StartsWith(\"jo\")"
     };
 
     var predicate = request.BuildFilterExpression<TestEntity>();
@@ -146,23 +159,23 @@ public class PagedRequestTests {
 
   [Fact]
   public void BuildFilterExpression_ShouldHandleEqualsAndContainsOperators() {
-    var queryable = GetTestQueryable();
+    var queryable = GetApplicationsTestQueryable();
     var request = new PagedRequest {
-      Filters = "Age == \"31\" && (Name.Contains(\"Jo\"))"
+      Filters = "organizationId == \"e1a92b8e-9f3f-4b3f-80c3-01941360e1fe\" && (name.Contains(\"nuge\"))"
     };
 
-    var predicate = request.BuildFilterExpression<TestEntity>();
+    var predicate = request.BuildFilterExpression<Application>();
     var filtered = queryable.Where(predicate).ToList();
 
-    Assert.Contains(filtered, t => t.Name.StartsWith("Jo"));
-    Assert.Single(filtered); // Assuming only "John" starts with "Jo"
+    Assert.Contains(filtered, t => t.Name.ToLower().Contains("nuge"));
+    Assert.Single(filtered); // Assuming only one entity matches the criteria
   }
 
   [Fact]
   public void BuildFilterExpression_ShouldHandleEndsWithOperator() {
     var queryable = GetTestQueryable();
     var request = new PagedRequest {
-      Filters = "Name.EndsWith(\"hn\")"
+      Filters = "name.EndsWith(\"hn\")"
     };
 
     var predicate = request.BuildFilterExpression<TestEntity>();
@@ -170,4 +183,6 @@ public class PagedRequestTests {
 
     Assert.Contains(filtered, t => t.Name.EndsWith("hn"));
   }
+
+
 }

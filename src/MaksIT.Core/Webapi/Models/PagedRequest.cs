@@ -2,6 +2,7 @@
 using System.Linq.Expressions;
 using System.Text.RegularExpressions;
 using MaksIT.Core.Abstractions.Webapi;
+using MaksIT.Core.Extensions;
 
 public class PagedRequest : RequestModelBase {
   public int PageSize { get; set; } = 100;
@@ -23,7 +24,7 @@ public class PagedRequest : RequestModelBase {
 
     // Regex to find property names and methods
     adjustedFilters = Regex.Replace(adjustedFilters, @"(\w+)\.(Contains|StartsWith|EndsWith)\(\""(.*?)\""\)", m => {
-      var propertyName = m.Groups[1].Value;
+      var propertyName = m.Groups[1].Value.ToTitle();
       var method = m.Groups[2].Value;
       var value = m.Groups[3].Value;
       var property = type.GetProperty(propertyName);
@@ -35,14 +36,15 @@ public class PagedRequest : RequestModelBase {
 
     // Regex to find equality and inequality comparisons
     adjustedFilters = Regex.Replace(adjustedFilters, @"(\w+)\s*(==|!=)\s*\""(.*?)\""", m => {
-      var propertyName = m.Groups[1].Value;
+      var propertyName = m.Groups[1].Value.ToTitle();
       var comparison = m.Groups[2].Value;
       var value = m.Groups[3].Value;
       var property = type.GetProperty(propertyName);
       if (property != null && property.PropertyType == typeof(string)) {
         return $"{propertyName}.ToLower() {comparison} \"{value.ToLower()}\"";
       }
-      return m.Value;
+      else
+        return $"{propertyName} {comparison} \"{value}\"";
     });
 
     // Parse the adjusted filter string into a dynamic lambda expression
