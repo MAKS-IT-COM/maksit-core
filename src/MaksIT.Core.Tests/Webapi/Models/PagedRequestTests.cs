@@ -145,6 +145,20 @@ public class PagedRequestTests {
   }
 
   [Fact]
+  public void BuildFilterExpression_ShouldHandleEqualsAndContainsOperators() {
+    var queryable = GetTestQueryable();
+    var request = new PagedRequest {
+      Filters = "Age == \"31\" && (Name.Contains(\"Jo\"))"
+    };
+
+    var predicate = request.BuildFilterExpression<TestEntity>();
+    var filtered = queryable.Where(predicate).ToList();
+
+    Assert.Contains(filtered, t => t.Name.StartsWith("Jo"));
+    Assert.Single(filtered); // Assuming only "John" starts with "Jo"
+  }
+
+  [Fact]
   public void BuildFilterExpression_ShouldHandleEndsWithOperator() {
     var queryable = GetTestQueryable();
     var request = new PagedRequest {
