@@ -13,14 +13,18 @@ public class PagedRequest : RequestModelBase {
   public bool IsAscending { get; set; } = true;
 
   public Expression<Func<T, bool>> BuildFilterExpression<T>() {
-    if (string.IsNullOrWhiteSpace(Filters))
+    return BuildFilterExpression<T>(Filters);
+  }
+
+  public virtual Expression<Func<T, bool>> BuildFilterExpression<T>(string? filters) {
+    if (string.IsNullOrWhiteSpace(filters))
       return x => true; // Returns an expression that doesn't filter anything.
 
     // Get the type of T
     var type = typeof(T);
 
     // Adjust Filters to make Contains, StartsWith, EndsWith, ==, and != case-insensitive
-    string adjustedFilters = Filters;
+    string adjustedFilters = filters;
 
     // Regex to find property names and methods
     adjustedFilters = Regex.Replace(adjustedFilters, @"(\w+)\.(Contains|StartsWith|EndsWith)\(\""(.*?)\""\)", m => {

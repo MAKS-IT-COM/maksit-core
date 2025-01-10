@@ -1,20 +1,41 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 
 
 namespace MaksIT.Core.Extensions;
 
 public static class ExpressionExtensions {
 
-  public static Expression<Func<T, bool>> CombineWith<T>(this Expression<Func<T, bool>> first, Expression<Func<T, bool>> second) {
+  public static Expression<Func<T, bool>> AndAlso<T>(this Expression<Func<T, bool>> first, Expression<Func<T, bool>> second) {
+    ArgumentNullException.ThrowIfNull(first);
+    ArgumentNullException.ThrowIfNull(second);
+
     var parameter = first.Parameters[0];
     var visitor = new SubstituteParameterVisitor(second.Parameters[0], parameter);
     var secondBody = visitor.Visit(second.Body);
     var combinedBody = Expression.AndAlso(first.Body, secondBody);
 
     return Expression.Lambda<Func<T, bool>>(combinedBody, parameter);
+  }
+
+  public static Expression<Func<T, bool>> OrElse<T>(this Expression<Func<T, bool>> first, Expression<Func<T, bool>> second) {
+    ArgumentNullException.ThrowIfNull(first);
+    ArgumentNullException.ThrowIfNull(second);
+
+    var parameter = first.Parameters[0];
+    var visitor = new SubstituteParameterVisitor(second.Parameters[0], parameter);
+    var secondBody = visitor.Visit(second.Body);
+    var combinedBody = Expression.OrElse(first.Body, secondBody);
+
+    return Expression.Lambda<Func<T, bool>>(combinedBody, parameter);
+  }
+
+  public static Expression<Func<T, bool>> Not<T>(this Expression<Func<T, bool>> expression) {
+    if (expression == null) throw new ArgumentNullException(nameof(expression));
+
+    var parameter = expression.Parameters[0];
+    var body = Expression.Not(expression.Body);
+
+    return Expression.Lambda<Func<T, bool>>(body, parameter);
   }
 
   private class SubstituteParameterVisitor : ExpressionVisitor {
@@ -31,4 +52,21 @@ public static class ExpressionExtensions {
       return node == _oldParameter ? _newParameter : base.VisitParameter(node);
     }
   }
+
+  public static IEnumerable<List<T>> Batch<T>(this IEnumerable<T> source, int batchSize) {
+    var batch = new List<T>(batchSize);
+    foreach (var item in source) {
+      batch.Add(item);
+      if (batch.Count == batchSize) {
+        yield return batch;
+        batch = new List<T>(batchSize);
+      }
+    }
+    if (batch.Any()) {
+      yield return batch;
+    }
+  }
+
+
+
 }
