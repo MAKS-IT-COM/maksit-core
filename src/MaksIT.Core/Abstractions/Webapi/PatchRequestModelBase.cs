@@ -41,13 +41,13 @@ public abstract class PatchRequestModelBase : RequestModelBase {
 
   public override IEnumerable<ValidationResult> Validate(ValidationContext validationContext) {
     if (!HasNonNullPatchField) {
-      yield return new ValidationResult("At least one patch field must be provided", new string[] { "PatchField" });
+      yield return new ValidationResult("At least one patch field must be provided", ["PatchField"]);
     }
 
     if (Operations != null) {
       foreach (var operation in Operations) {
         if (!Enum.IsDefined(typeof(PatchOperation), operation.Value)) {
-          yield return new ValidationResult($"Invalid patch operation '{operation.Value}' for property '{operation.Key}'", new string[] { operation.Key });
+          yield return new ValidationResult($"Invalid patch operation '{operation.Value}' for property '{operation.Key}'", [operation.Key]);
         }
       }
     }
