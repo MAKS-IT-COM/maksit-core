@@ -504,6 +504,88 @@ This utility makes it easy to compose complex logical expressions dynamically, a
 
 ---
 
+### FormatsExtensions
+
+The `FormatsExtensions` class in the `MaksIT.Core.Extensions` namespace provides utility methods for working with TAR file creation from directories. These methods simplify the process of compressing directories into TAR files while handling various edge cases, such as invalid paths or empty directories.
+
+---
+
+#### Methods
+
+##### 1. **`TryCreateTarFromDirectory`**
+
+###### Summary
+Attempts to create a TAR file from the contents of a specified directory. Returns `true` if the operation succeeds, or `false` if it fails due to invalid input or other errors.
+
+###### Parameters
+- `string sourceDirectory`: The path to the source directory to be compressed.
+- `string outputTarPath`: The path where the TAR file will be created.
+
+###### Usage
+
+```csharp
+string sourceDirectory = @"C:\MyFolder";
+string outputTarPath = @"C:\MyFolder.tar";
+
+if (FormatsExtensions.TryCreateTarFromDirectory(sourceDirectory, outputTarPath)) {
+  Console.WriteLine("TAR file created successfully.");
+}
+else {
+  Console.WriteLine("Failed to create TAR file.");
+}
+```
+
+---
+
+#### Features
+
+1. **Error Handling**:
+   - Returns `false` for invalid source directories, empty directories, or inaccessible output paths.
+
+2. **Cross-Platform Compatibility**:
+   - Designed to work on platforms supported by .NET 8.
+
+3. **Ease of Use**:
+   - Simplifies the process of creating TAR files with minimal code.
+
+---
+
+#### Notes
+
+- **Use Cases**:
+  - Archiving directories for backup or distribution.
+  - Automating file compression tasks in applications.
+
+- **Edge Cases**:
+  - If the source directory does not exist, is empty, or the output path is invalid, the method will return `false`.
+  - If the output file is locked or cannot be created, the method will also return `false`.
+
+---
+
+#### Example End-to-End Usage
+
+```csharp
+// Valid input
+string sourceDirectory = @"C:\MyFolder";
+string outputTarPath = @"C:\MyFolder.tar";
+
+if (FormatsExtensions.TryCreateTarFromDirectory(sourceDirectory, outputTarPath)) {
+  Console.WriteLine("TAR file created successfully.");
+}
+else {
+  Console.WriteLine("Failed to create TAR file.");
+}
+
+// Invalid source directory
+string invalidSourceDirectory = @"C:\NonExistentFolder";
+
+if (!FormatsExtensions.TryCreateTarFromDirectory(invalidSourceDirectory, outputTarPath)) {
+  Console.WriteLine("Source directory does not exist.");
+}
+```
+
+---
+
 ### GuidExtensions
 
 The `GuidExtensions` class in the `MaksIT.Core.Extensions` namespace provides an extension method for converting a `Guid` to a nullable `Guid?`. This is useful in scenarios where the default value of `Guid.Empty` needs to be treated as `null`.
