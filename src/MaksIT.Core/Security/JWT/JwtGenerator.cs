@@ -1,35 +1,33 @@
-﻿using System.Text;
+﻿using Microsoft.IdentityModel.Tokens;
+using System.Diagnostics.CodeAnalysis;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
-using System.IdentityModel.Tokens.Jwt;
-using System.Diagnostics.CodeAnalysis;
-using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
-namespace MaksIT.Core.Security;
 
-public class JWTTokenClaims {
-  public string? UserId { get; set; }
-  public string? Username { get; set; }
-  public List<string>? Roles { get; set; }
-  public DateTime? IssuedAt { get; set; }
-  public DateTime? ExpiresAt { get; set; }
-}
-
-public class JWTTokenGenerateRequest {
-  public required string Secret { get; set; }
-  public required string Issuer { get; set; }
-  public required string Audience { get; set; }
-  public double Expiration { get; set; }
-  public string? UserId { get; set; }
-  public string? Username { get; set; }
-  public List<string>? Roles { get; set; }
-
-}
+namespace MaksIT.Core.Security.JWT;
 
 public static class JwtGenerator {
+
+  /// <summary>
+  /// Attempts to generate a JWT token using the specified request parameters.
+  /// </summary>
+  /// <param name="request">
+  /// The <see cref="JWTTokenGenerateRequest"/> containing the secret, issuer, audience, expiration, user ID, username, and roles for the token.
+  /// </param>
+  /// <param name="tokenData">
+  /// When this method returns <c>true</c>, contains a tuple with the generated JWT string and its associated claims; otherwise, <c>null</c>.
+  /// </param>
+  /// <param name="errorMessage">
+  /// When this method returns <c>false</c>, contains the error message describing the failure; otherwise, <c>null</c>.
+  /// </param>
+  /// <returns>
+  /// <c>true</c> if the token was successfully generated; otherwise, <c>false</c>.
+  /// </returns>
   public static bool TryGenerateToken(JWTTokenGenerateRequest request, [NotNullWhen(true)] out (string, JWTTokenClaims)? tokenData, [NotNullWhen(false)] out string? errorMessage) {
     try {
-      var secretKey = GetSymmetricSecurityKey(request.Secret);
+      var secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(request.Secret));
       var credentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
 
       var issuedAt = DateTime.UtcNow;
@@ -84,6 +82,17 @@ public static class JwtGenerator {
 
   public static string GenerateSecret(int keySize = 32) => Convert.ToBase64String(GetRandomBytes(keySize));
 
+  /// <summary>
+  /// Attempts to validate a JWT token using the provided secret, issuer, audience, and token string.
+  /// </summary>
+  /// <param name="secret"></param>
+  /// <param name="issuer"></param>
+  /// <param name="audience"></param>
+  /// <param name="token"></param>
+  /// <param name="tokenClaims"></param>
+  /// <param name="errorMessage"></param>
+  /// <returns></returns>
+  /// <exception cref="SecurityTokenException"></exception>
   public static bool TryValidateToken(
     string secret,
     string issuer,
@@ -136,8 +145,8 @@ public static class JwtGenerator {
     var issuedAtClaim = principal.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Iat)?.Value;
     var expiresAtClaim = principal.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Exp)?.Value;
 
-    DateTime? issuedAt = issuedAtClaim != null ? DateTimeOffset.FromUnixTimeSeconds(long.Parse(issuedAtClaim)).UtcDateTime : (DateTime?)null;
-    DateTime? expiresAt = expiresAtClaim != null ? DateTimeOffset.FromUnixTimeSeconds(long.Parse(expiresAtClaim)).UtcDateTime : (DateTime?)null;
+    DateTime? issuedAt = issuedAtClaim != null ? DateTimeOffset.FromUnixTimeSeconds(long.Parse(issuedAtClaim)).UtcDateTime : null;
+    DateTime? expiresAt = expiresAtClaim != null ? DateTimeOffset.FromUnixTimeSeconds(long.Parse(expiresAtClaim)).UtcDateTime : null;
 
     return new JWTTokenClaims {
       UserId = userId,
@@ -147,9 +156,6 @@ public static class JwtGenerator {
       ExpiresAt = expiresAt
     };
   }
-
-  // Private helper method to get a symmetric security key
-  private static SymmetricSecurityKey GetSymmetricSecurityKey(string secret) => new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
 
   // Private helper method for generating random bytes
   private static byte[] GetRandomBytes(int size) {

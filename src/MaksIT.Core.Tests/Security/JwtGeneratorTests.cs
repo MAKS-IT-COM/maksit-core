@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 using Xunit;
-using MaksIT.Core.Security;
+using MaksIT.Core.Security.JWT;
 
 namespace MaksIT.Core.Tests.Security {
   public class JwtGeneratorTests {
