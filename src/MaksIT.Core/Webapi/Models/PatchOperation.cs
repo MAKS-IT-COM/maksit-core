@@ -21,19 +21,4 @@ public enum PatchOperation {
   /// When you need to remove an item from a collection
   /// </summary>
   RemoveFromCollection,
-
-  /// <summary>
-  /// When you need to replace a collection
-  /// </summary>
-  ReplaceCollection,
-
-  /// <summary>
-  /// When you need to clear a collection
-  /// </summary>
-  ClearCollection,
-
-  /// <summary>
-  /// When you need to set a collection to null
-  /// </summary>
-  RemoveCollection
 }
