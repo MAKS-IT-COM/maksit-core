@@ -11,11 +11,6 @@ public abstract class PatchRequestModelBase : RequestModelBase {
 
   public Dictionary<string, PatchOperation>? Operations { get; set; }
 
-  private bool HasNonNullPatchField => GetType()
-    .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-    .Where(prop => prop.Name != nameof(Operations))
-    .Any(prop => prop.GetValue(this) != null);
-
   /// <summary>
   /// Attempts to retrieve the patch operation associated with the specified property name (case insensitive).
   /// </summary>
@@ -40,10 +35,6 @@ public abstract class PatchRequestModelBase : RequestModelBase {
   }
 
   public override IEnumerable<ValidationResult> Validate(ValidationContext validationContext) {
-    if (!HasNonNullPatchField) {
-      yield return new ValidationResult("At least one patch field must be provided", ["PatchField"]);
-    }
-
     if (Operations != null) {
       foreach (var operation in Operations) {
         if (!Enum.IsDefined(typeof(PatchOperation), operation.Value)) {
