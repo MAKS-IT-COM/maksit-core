@@ -8,8 +8,10 @@ using System.Text;
 
 namespace MaksIT.Core.Security.JWT;
 
-public static class JwtGenerator {
 
+
+
+public static class JwtGenerator {
   /// <summary>
   /// Attempts to generate a JWT token using the specified request parameters.
   /// </summary>
@@ -48,6 +50,9 @@ public static class JwtGenerator {
 
       if (request.Roles !=null)
         claims.AddRange(request.Roles.Select(role => new Claim(ClaimTypes.Role, role)));
+
+      if (request.AclEntries != null)
+        claims.AddRange(request.AclEntries.Select(acl => new Claim(CustomClaims.AclEntry.Name, acl)));
 
       var tokenDescriptor = new JwtSecurityToken(
           issuer: request.Issuer,
@@ -141,6 +146,7 @@ public static class JwtGenerator {
 
     var username = principal.Identity?.Name;
     var roles = principal.Claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value).ToList();
+    var aclEntries = principal.Claims.Where(c => c.Type == CustomClaims.AclEntry.Name).Select(c => c.Value).ToList();
 
     var issuedAtClaim = principal.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Iat)?.Value;
     var expiresAtClaim = principal.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Exp)?.Value;
@@ -152,6 +158,7 @@ public static class JwtGenerator {
       UserId = userId,
       Username = username,
       Roles = roles,
+      AclEntries = aclEntries,
       IssuedAt = issuedAt,
       ExpiresAt = expiresAt
     };

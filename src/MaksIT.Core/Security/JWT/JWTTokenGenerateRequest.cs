@@ -37,4 +37,7 @@ public class JWTTokenGenerateRequest {
   /// </summary>
   public List<string>? Roles { get; set; }
 
+
+  public List<string>? AclEntries { get; set; }
+
 }

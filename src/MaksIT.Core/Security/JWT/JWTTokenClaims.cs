@@ -17,6 +17,8 @@ public class JWTTokenClaims {
   /// </summary>
   public List<string>? Roles { get; set; }
 
+  public List<string>? AclEntries { get; set; }
+
   /// <summary>
   /// Gets or sets the date and time when the token was issued.
   /// </summary>
