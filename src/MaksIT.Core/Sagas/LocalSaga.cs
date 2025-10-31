@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
+
 
 namespace MaksIT.Core.Sagas;
 /// <summary>
@@ -15,7 +11,8 @@ public sealed class LocalSaga {
 
   internal LocalSaga(
     IReadOnlyList<ILocalSagaStep> pipeline,
-    ILogger logger) {
+    ILogger logger
+  ) {
     _pipeline = pipeline;
     _logger = logger;
   }

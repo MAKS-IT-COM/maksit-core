@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace MaksIT.Core.Sagas;
+﻿namespace MaksIT.Core.Sagas;
 
 /// <summary>
 /// Shared context to pass values between steps without tight coupling.

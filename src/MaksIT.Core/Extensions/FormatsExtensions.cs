@@ -2,7 +2,7 @@
 
 
 namespace MaksIT.Core.Extensions;
-public static class FromatsExtensions {
+public static class FormatsExtensions {
   public static bool TryCreateTarFromDirectory(string sourceDirectory, string outputTarPath) {
     // Validate source directory
     if (string.IsNullOrWhiteSpace(sourceDirectory) || !Directory.Exists(sourceDirectory)) {

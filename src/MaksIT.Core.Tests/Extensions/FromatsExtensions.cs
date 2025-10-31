@@ -10,7 +10,7 @@ namespace MaksIT.Core.Extensions.Tests;
       string outputTarPath = "output.tar";
 
       // Act
-      bool result = FromatsExtensions.TryCreateTarFromDirectory(invalidSourceDirectory, outputTarPath);
+      bool result = FormatsExtensions.TryCreateTarFromDirectory(invalidSourceDirectory, outputTarPath);
 
       // Assert
       Assert.False(result);
@@ -23,7 +23,7 @@ namespace MaksIT.Core.Extensions.Tests;
       string invalidOutputPath = "";
 
       // Act
-      bool result = FromatsExtensions.TryCreateTarFromDirectory(sourceDirectory, invalidOutputPath);
+      bool result = FormatsExtensions.TryCreateTarFromDirectory(sourceDirectory, invalidOutputPath);
 
       // Assert
       Assert.False(result);
@@ -37,7 +37,7 @@ namespace MaksIT.Core.Extensions.Tests;
       string outputTarPath = Path.Combine(Path.GetTempPath(), "output.tar");
 
       // Act
-      bool result = FromatsExtensions.TryCreateTarFromDirectory(sourceDirectory, outputTarPath);
+      bool result = FormatsExtensions.TryCreateTarFromDirectory(sourceDirectory, outputTarPath);
 
       // Assert
       Assert.False(result);
@@ -57,7 +57,7 @@ namespace MaksIT.Core.Extensions.Tests;
       string outputTarPath = Path.Combine(Path.GetTempPath(), "output.tar");
 
       // Act
-      bool result = FromatsExtensions.TryCreateTarFromDirectory(sourceDirectory, outputTarPath);
+      bool result = FormatsExtensions.TryCreateTarFromDirectory(sourceDirectory, outputTarPath);
 
       // Assert
       Assert.True(result);
@@ -82,7 +82,7 @@ namespace MaksIT.Core.Extensions.Tests;
       // Lock the file to simulate inability to create it
       using (FileStream lockedFile = File.Create(outputTarPath)) {
         // Act
-        bool result = FromatsExtensions.TryCreateTarFromDirectory(sourceDirectory, outputTarPath);
+        bool result = FormatsExtensions.TryCreateTarFromDirectory(sourceDirectory, outputTarPath);
 
         // Assert
         Assert.False(result);

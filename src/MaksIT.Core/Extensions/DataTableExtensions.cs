@@ -4,12 +4,13 @@
 namespace MaksIT.Core.Extensions;
 public static class DataTableExtensions {
 
+  /// <summary>
+  /// Counts duplicate records between two DataTables.
+  /// </summary>
+  /// <param name="dt1"></param>
+  /// <param name="dt2"></param>
+  /// <returns></returns>
   public static int DuplicatesCount(this DataTable dt1, DataTable dt2) {
-    if (dt1 == null)
-      throw new ArgumentNullException(nameof(dt1));
-    if (dt2 == null)
-      throw new ArgumentNullException(nameof(dt2));
-
     var duplicates = 0;
     foreach (DataRow dtRow1 in dt1.Rows) {
       var dt1Items = dtRow1.ItemArray.Select(item => item?.ToString() ?? string.Empty);
@@ -34,11 +35,6 @@ public static class DataTableExtensions {
   /// <param name="columns"></param>
   /// <returns></returns>
   public static DataTable DistinctRecords(this DataTable dt, string[] columns) {
-    if (dt == null)
-      throw new ArgumentNullException(nameof(dt));
-    if (columns == null)
-      throw new ArgumentNullException(nameof(columns));
-
     return dt.DefaultView.ToTable(true, columns);
   }
 }

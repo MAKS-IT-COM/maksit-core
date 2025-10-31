@@ -1,9 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
+
 
 namespace MaksIT.Core.Sagas;
 
@@ -12,11 +8,10 @@ namespace MaksIT.Core.Sagas;
 /// </summary>
 public sealed class LocalSagaBuilder {
   private readonly List<ILocalSagaStep> _pipeline = new();
-  private ILogger? _logger;
+  private ILogger _logger;
 
-  public LocalSagaBuilder WithLogger(ILogger logger) {
+  public LocalSagaBuilder (ILogger logger) {
     _logger = logger;
-    return this;
   }
 
   public LocalSagaBuilder AddAction(
@@ -66,8 +61,6 @@ public sealed class LocalSagaBuilder {
   }
 
   public LocalSaga Build() {
-    if (_logger == null)
-      throw new InvalidOperationException("Logger must be provided via WithLogger().");
     return new LocalSaga(_pipeline, _logger);
   }
 }

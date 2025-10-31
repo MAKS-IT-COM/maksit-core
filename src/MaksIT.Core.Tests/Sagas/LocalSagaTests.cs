@@ -11,7 +11,7 @@ public class LocalSagaTests
     {
         // Arrange
         var logger = LoggerHelper.CreateConsoleLogger();
-        var builder = new LocalSagaBuilder().WithLogger(logger);
+        var builder = new LocalSagaBuilder(logger);
         var stepExecuted = false;
 
         builder.AddAction(
@@ -36,7 +36,7 @@ public class LocalSagaTests
     {
         // Arrange
         var logger = LoggerHelper.CreateConsoleLogger();
-        var builder = new LocalSagaBuilder().WithLogger(logger);
+        var builder = new LocalSagaBuilder(logger);
         var compensationCalled = false;
 
         builder.AddAction(
@@ -63,7 +63,7 @@ public class LocalSagaTests
     {
         // Arrange
         var logger = LoggerHelper.CreateConsoleLogger();
-        var builder = new LocalSagaBuilder().WithLogger(logger);
+        var builder = new LocalSagaBuilder(logger);
         var stepExecuted = false;
 
         builder.AddActionIf(
@@ -89,7 +89,7 @@ public class LocalSagaTests
     {
         // Arrange
         var logger = LoggerHelper.CreateConsoleLogger();
-        var builder = new LocalSagaBuilder().WithLogger(logger);
+        var builder = new LocalSagaBuilder(logger);
 
         builder.AddAction(
             "LoggingStep",
@@ -107,7 +107,7 @@ public class LocalSagaTests
     {
         // Arrange
         var logger = LoggerHelper.CreateConsoleLogger();
-        var builder = new LocalSagaBuilder().WithLogger(logger);
+        var builder = new LocalSagaBuilder(logger);
         var context = new LocalSagaContext();
         context.Set("state", "initial");
 
@@ -143,7 +143,7 @@ public class LocalSagaTests
     {
         // Arrange
         var logger = LoggerHelper.CreateConsoleLogger();
-        var builder = new LocalSagaBuilder().WithLogger(logger);
+        var builder = new LocalSagaBuilder(logger);
         var context = new LocalSagaContext();
         var compensationLog = new List<string>();
 
