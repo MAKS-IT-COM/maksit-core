@@ -13,6 +13,10 @@
   - [DataTable Extensions](#datatable-extensions)
   - [Guid Extensions](#guid-extensions)
 - [Logging](#logging)
+  - [File Logger](#file-logger)
+  - [JSON File Logger](#json-file-logger)
+- [Threading](#threading)
+  - [Lock Manager](#lock-manager)
 - [Networking](#networking)
   - [Network Connection](#network-connection)
   - [Ping Port](#ping-port)
@@ -511,32 +515,74 @@ string result = "example".Left(3); // "exa"
 
 #### Object Extensions
 
-The `ObjectExtensions` class provides methods for serializing objects to JSON strings and deserializing JSON strings back to objects.
+The `ObjectExtensions` class provides advanced methods for working with objects, including serialization, deep cloning, and structural equality comparison.
 
 ---
 
 #### Features
 
 1. **JSON Serialization**:
-   - Convert objects to JSON strings.
+   - Convert objects to JSON strings with optional custom converters.
 
-2. **JSON Deserialization**:
-   - Convert JSON strings back to objects.
+2. **Deep Cloning**:
+   - Create a deep clone of an object, preserving reference identity and supporting cycles.
+
+3. **Structural Equality**:
+   - Compare two objects deeply for structural equality, including private fields.
+
+4. **Snapshot Reversion**:
+   - Revert an object to a previous state by copying all fields from a snapshot.
 
 ---
 
 #### Example Usage
 
-##### Serialization
+##### JSON Serialization
 ```csharp
 var person = new { Name = "John", Age = 30 };
 string json = person.ToJson();
+
+// With custom converters
+var converters = new List<JsonConverter> { new CustomConverter() };
+string jsonWithConverters = person.ToJson(converters);
 ```
 
-##### Deserialization
+##### Deep Cloning
 ```csharp
-var person = json.ToObject<Person>();
+var original = new Person { Name = "John", Age = 30 };
+var clone = original.DeepClone();
 ```
+
+##### Structural Equality
+```csharp
+var person1 = new Person { Name = "John", Age = 30 };
+var person2 = new Person { Name = "John", Age = 30 };
+
+bool areEqual = person1.DeepEqual(person2); // True
+```
+
+##### Snapshot Reversion
+```csharp
+var snapshot = new Person { Name = "John", Age = 30 };
+var current = new Person { Name = "Doe", Age = 25 };
+
+current.RevertFrom(snapshot);
+// current.Name is now "John"
+// current.Age is now 30
+```
+
+---
+
+#### Best Practices
+
+1. **Use Deep Cloning for Complex Objects**:
+   - Ensure objects are deeply cloned when working with mutable reference types.
+
+2. **Validate Structural Equality**:
+   - Use `DeepEqual` for scenarios requiring precise object comparisons.
+
+3. **Revert State Safely**:
+   - Use `RevertFrom` to safely restore object states in tracked entities.
 
 ---
 
@@ -599,27 +645,88 @@ The `Logging` namespace provides a custom file-based logging implementation that
 
 ---
 
+### File Logger
+
+The `FileLogger` class in the `MaksIT.Core.Logging` namespace provides a simple and efficient way to log messages to plain text files. It supports log retention policies and ensures thread-safe writes using the `LockManager`.
+
 #### Features
 
-1. **File-Based Logging**:
-   - Log messages to a specified file.
+1. **Plain Text Logging**:
+   - Logs messages in a human-readable plain text format.
 
-2. **Log Levels**:
-   - Supports all standard log levels.
+2. **Log Retention**:
+   - Automatically deletes old log files based on a configurable retention period.
 
 3. **Thread Safety**:
-   - Ensures thread-safe writes to the log file.
-
----
+   - Ensures safe concurrent writes to the log file using the `LockManager`.
 
 #### Example Usage
 
 ```csharp
 var services = new ServiceCollection();
-services.AddLogging(builder => builder.AddFile("logs.txt"));
+services.AddLogging(builder => builder.AddFileLogger("logs", TimeSpan.FromDays(7)));
 
 var logger = services.BuildServiceProvider().GetRequiredService<ILogger<FileLogger>>();
 logger.LogInformation("Logging to file!");
+```
+
+---
+
+### JSON File Logger
+
+The `JsonFileLogger` class in the `MaksIT.Core.Logging` namespace provides structured logging in JSON format. It is ideal for machine-readable logs and integrates seamlessly with log aggregation tools.
+
+#### Features
+
+1. **JSON Logging**:
+   - Logs messages in structured JSON format, including timestamps, log levels, and exceptions.
+
+2. **Log Retention**:
+   - Automatically deletes old log files based on a configurable retention period.
+
+3. **Thread Safety**:
+   - Ensures safe concurrent writes to the log file using the `LockManager`.
+
+#### Example Usage
+
+```csharp
+var services = new ServiceCollection();
+services.AddLogging(builder => builder.AddJsonFileLogger("logs", TimeSpan.FromDays(7)));
+
+var logger = services.BuildServiceProvider().GetRequiredService<ILogger<JsonFileLogger>>();
+logger.LogInformation("Logging to JSON file!");
+```
+
+---
+
+## Threading
+
+### Lock Manager
+
+The `LockManager` class in the `MaksIT.Core.Threading` namespace provides a robust solution for managing concurrency and rate limiting. It ensures safe access to shared resources in multi-threaded or multi-process environments.
+
+#### Features
+
+1. **Thread Safety**:
+   - Ensures mutual exclusion using a semaphore.
+
+2. **Rate Limiting**:
+   - Limits the frequency of access to shared resources using a token bucket rate limiter.
+
+3. **Reentrant Locks**:
+   - Supports reentrant locks for the same thread.
+
+#### Example Usage
+
+```csharp
+var lockManager = new LockManager();
+
+await lockManager.ExecuteWithLockAsync(async () => {
+    // Critical section
+    Console.WriteLine("Executing safely");
+});
+
+lockManager.Dispose();
 ```
 
 ---

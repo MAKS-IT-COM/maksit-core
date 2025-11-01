@@ -30,9 +30,8 @@ public static class LoggerHelper
 
         serviceCollection.AddLogging(builder =>
         {
-            var env = serviceCollection.BuildServiceProvider().GetRequiredService<IHostEnvironment>();
             builder.ClearProviders();
-            builder.AddConsole(env);
+            builder.AddConsoleLogger();
         });
 
         var provider = serviceCollection.BuildServiceProvider();

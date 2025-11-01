@@ -28,7 +28,7 @@ public class FileLoggerTests {
             ContentRootPath = Directory.GetCurrentDirectory()
         });
 
-    serviceCollection.AddLogging(builder => builder.AddFile(_testFolderPath, TimeSpan.FromDays(7)));
+    serviceCollection.AddLogging(builder => builder.AddFileLogger(_testFolderPath, TimeSpan.FromDays(7)));
 
     var provider = serviceCollection.BuildServiceProvider();
     var logger = provider.GetRequiredService<ILogger<FileLoggerTests>>();
@@ -55,7 +55,7 @@ public class FileLoggerTests {
             ContentRootPath = Directory.GetCurrentDirectory()
         });
 
-    serviceCollection.AddLogging(builder => builder.AddFile(_testFolderPath, retentionPeriod));
+    serviceCollection.AddLogging(builder => builder.AddFileLogger(_testFolderPath, retentionPeriod));
 
     var provider = serviceCollection.BuildServiceProvider();
     var logger = provider.GetRequiredService<ILogger<FileLoggerTests>>();
@@ -86,7 +86,7 @@ public class FileLoggerTests {
             ContentRootPath = Directory.GetCurrentDirectory()
         });
 
-    serviceCollection.AddLogging(builder => builder.AddFile(_testFolderPath));
+    serviceCollection.AddLogging(builder => builder.AddFileLogger(_testFolderPath));
 
     var provider = serviceCollection.BuildServiceProvider();
     var logger = provider.GetRequiredService<ILogger<FileLoggerTests>>();
