@@ -5,8 +5,8 @@ using Microsoft.Extensions.Hosting;
 namespace MaksIT.Core.Logging;
 
 public static class LoggingBuilderExtensions {
-  public static ILoggingBuilder AddFile(this ILoggingBuilder builder, string filePath) {
-    builder.Services.AddSingleton<ILoggerProvider>(new FileLoggerProvider(filePath));
+  public static ILoggingBuilder AddFile(this ILoggingBuilder builder, string folderPath, TimeSpan? retentionPeriod = null) {
+    builder.Services.AddSingleton<ILoggerProvider>(new FileLoggerProvider(folderPath, retentionPeriod));
     return builder;
   }
   public static ILoggingBuilder AddConsole(this ILoggingBuilder logging, IHostEnvironment env) {
