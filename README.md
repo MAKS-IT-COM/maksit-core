@@ -12,6 +12,7 @@
   - [Object Extensions](#object-extensions)
   - [DataTable Extensions](#datatable-extensions)
   - [Guid Extensions](#guid-extensions)
+  - [Enum Extensions](#enum-extensions)
 - [Logging](#logging)
   - [File Logger](#file-logger)
   - [JSON File Logger](#json-file-logger)
@@ -1036,6 +1037,47 @@ The `Processes` class provides methods for managing system processes.
 ```csharp
 Processes.TryStart("notepad.exe", "", 0, false, out var error);
 ```
+
+---
+
+## Enum Extensions
+
+The `EnumExtensions` class provides utility methods for working with enum types, specifically for retrieving display names defined via the `DisplayAttribute`.
+
+---
+
+#### Features
+
+1. **Get Display Name**:
+   - Retrieve the value of the `DisplayAttribute.Name` property for an enum value, or fall back to the enum's name if the attribute is not present.
+
+---
+
+#### Example Usage
+
+```csharp
+using System.ComponentModel.DataAnnotations;
+using MaksIT.Core.Extensions;
+
+public enum Status {
+    [Display(Name = "In Progress")]
+    InProgress,
+    Completed
+}
+
+var status = Status.InProgress;
+string displayName = status.GetDisplayName(); // "In Progress"
+
+var completed = Status.Completed;
+string completedName = completed.GetDisplayName(); // "Completed"
+```
+
+---
+
+#### Best Practices
+
+- Use the `Display` attribute on enum members to provide user-friendly names for UI or logging.
+- Use `GetDisplayName()` to consistently retrieve display names for enums throughout your application.
 
 ---
 

@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.Data;
 using System.Globalization;
-using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -219,16 +216,34 @@ namespace MaksIT.Core.Extensions {
       return plainText;
     }
 
-    public static string ToCamelCase(this string input) {
+    public static string ToCase(this string input, StringCaseStyle style) {
       if (string.IsNullOrEmpty(input)) return input;
 
-      var words = input.Split(new[] { ' ', '-', '_' }, StringSplitOptions.RemoveEmptyEntries);
-      for (var i = 0; i < words.Length; i++) {
-        words[i] = i == 0 ? words[i].ToLower() : char.ToUpper(words[i][0]) + words[i][1..].ToLower();
-      }
+      var words = Regex.Split(input, @"[^a-zA-Z0-9]+")
+                       .Where(w => !string.IsNullOrEmpty(w))
+                       .ToArray();
 
-      return string.Join("", words);
+      if (words.Length == 0) return string.Empty;
+
+      switch (style) {
+        case StringCaseStyle.CamelCase:
+          return words[0].ToLowerInvariant() +
+                 string.Concat(words.Skip(1).Select(w => char.ToUpperInvariant(w[0]) + w[1..].ToLowerInvariant()));
+        case StringCaseStyle.PascalCase:
+          return string.Concat(words.Select(w => char.ToUpperInvariant(w[0]) + w[1..].ToLowerInvariant()));
+        case StringCaseStyle.SnakeCase:
+          return string.Join("_", words.Select(w => w.ToLowerInvariant()));
+        case StringCaseStyle.KebabCase:
+          return string.Join("-", words.Select(w => w.ToLowerInvariant()));
+        default:
+          throw new ArgumentOutOfRangeException(nameof(style), style, null);
+      }
     }
+
+    public static string ToCamelCase(this string input) => input.ToCase(StringCaseStyle.CamelCase);
+    public static string ToPascalCase(this string input) => input.ToCase(StringCaseStyle.PascalCase);
+    public static string ToSnakeCase(this string input) => input.ToCase(StringCaseStyle.SnakeCase);
+    public static string ToKebabCase(this string input) => input.ToCase(StringCaseStyle.KebabCase);
 
     public static DataTable CSVToDataTable(this string filePath) {
       if (string.IsNullOrEmpty(filePath))
@@ -272,5 +287,13 @@ namespace MaksIT.Core.Extensions {
       }
       return true;
     }
+  }
+
+
+  public enum StringCaseStyle {
+    CamelCase,
+    PascalCase,
+    SnakeCase,
+    KebabCase
   }
 }
