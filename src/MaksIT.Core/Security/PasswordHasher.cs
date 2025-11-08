@@ -13,9 +13,11 @@ public static class PasswordHasher {
     return randomBytes;
   }
 
-  private static string CreateHash(string value, byte[] saltBytes) {
+  private static string CreateHash(string value, byte[] saltBytes, string pepper) {
+    // Combine password and pepper
+    var valueWithPepper = value + pepper;
     var valueBytes = KeyDerivation.Pbkdf2(
-        password: value,
+        password: valueWithPepper,
         salt: saltBytes,
         prf: KeyDerivationPrf.HMACSHA512,
         iterationCount: 100_000, // Increased iteration count
@@ -26,12 +28,13 @@ public static class PasswordHasher {
 
   public static bool TryCreateSaltedHash(
     string value,
+    string pepper,
     [NotNullWhen(true)] out (string Salt, string Hash)? saltedHash,
     [NotNullWhen(false)] out string? errorMessage
   ) {
     try {
       var saltBytes = CreateSaltBytes();
-      var hash = CreateHash(value, saltBytes);
+      var hash = CreateHash(value, saltBytes, pepper);
       var salt = Convert.ToBase64String(saltBytes);
 
       saltedHash = (salt, hash);
@@ -49,12 +52,13 @@ public static class PasswordHasher {
     string value,
     string salt,
     string hash,
+    string pepper,
     [NotNullWhen(true)] out bool isValid,
     [NotNullWhen(false)] out string? errorMessage
   ) {
     try {
       var saltBytes = Convert.FromBase64String(salt);
-      var hashToCompare = CreateHash(value, saltBytes);
+      var hashToCompare = CreateHash(value, saltBytes, pepper);
 
       isValid = CryptographicOperations.FixedTimeEquals(
           Convert.FromBase64String(hashToCompare),

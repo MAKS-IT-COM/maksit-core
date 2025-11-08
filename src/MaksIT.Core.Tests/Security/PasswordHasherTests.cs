@@ -3,13 +3,15 @@ using Xunit;
 
 namespace MaksIT.Core.Tests.Security {
   public class PasswordHasherTests {
+    private const string Pepper = "TestPepper";
+
     [Fact]
     public void CreateSaltedHash_ValidPassword_ReturnsSaltAndHash() {
       // Arrange
       var password = "SecurePassword123!";
 
       // Act
-      var result = PasswordHasher.TryCreateSaltedHash(password, out var saltedHash, out var errorMessage);
+      var result = PasswordHasher.TryCreateSaltedHash(password, Pepper, out var saltedHash, out var errorMessage);
 
       // Assert
       Assert.True(result);
@@ -25,7 +27,7 @@ namespace MaksIT.Core.Tests.Security {
       var password = "";
 
       // Act
-      var result = PasswordHasher.TryCreateSaltedHash(password, out var saltedHash, out var errorMessage);
+      var result = PasswordHasher.TryCreateSaltedHash(password, Pepper, out var saltedHash, out var errorMessage);
 
       // Assert
       Assert.True(result);
@@ -41,7 +43,7 @@ namespace MaksIT.Core.Tests.Security {
       var password = "   ";
 
       // Act
-      var result = PasswordHasher.TryCreateSaltedHash(password, out var saltedHash, out var errorMessage);
+      var result = PasswordHasher.TryCreateSaltedHash(password, Pepper, out var saltedHash, out var errorMessage);
 
       // Assert
       Assert.True(result);
@@ -55,10 +57,10 @@ namespace MaksIT.Core.Tests.Security {
     public void ValidateHash_CorrectPassword_ReturnsTrue() {
       // Arrange
       var password = "SecurePassword123!";
-      PasswordHasher.TryCreateSaltedHash(password, out var saltedHash, out var createErrorMessage);
+      PasswordHasher.TryCreateSaltedHash(password, Pepper, out var saltedHash, out var createErrorMessage);
 
       // Act
-      var result = PasswordHasher.TryValidateHash(password, saltedHash?.Salt, saltedHash?.Hash, out var isValid, out var validateErrorMessage);
+      var result = PasswordHasher.TryValidateHash(password, saltedHash?.Salt, saltedHash?.Hash, Pepper, out var isValid, out var validateErrorMessage);
 
       // Assert
       Assert.True(result);
@@ -71,10 +73,10 @@ namespace MaksIT.Core.Tests.Security {
       // Arrange
       var password = "SecurePassword123!";
       var wrongPassword = "WrongPassword456!";
-      PasswordHasher.TryCreateSaltedHash(password, out var saltedHash, out var createErrorMessage);
+      PasswordHasher.TryCreateSaltedHash(password, Pepper, out var saltedHash, out var createErrorMessage);
 
       // Act
-      var result = PasswordHasher.TryValidateHash(wrongPassword, saltedHash?.Salt, saltedHash?.Hash, out var isValid, out var validateErrorMessage);
+      var result = PasswordHasher.TryValidateHash(wrongPassword, saltedHash?.Salt, saltedHash?.Hash, Pepper, out var isValid, out var validateErrorMessage);
 
       // Assert
       Assert.True(result);
@@ -90,7 +92,7 @@ namespace MaksIT.Core.Tests.Security {
       var salt = ""; // Assuming empty salt
 
       // Act
-      var result = PasswordHasher.TryValidateHash(password, salt, storedHash, out var isValid, out var errorMessage);
+      var result = PasswordHasher.TryValidateHash(password, salt, storedHash, Pepper, out var isValid, out var errorMessage);
 
       // Assert
       Assert.True(result);
@@ -106,7 +108,7 @@ namespace MaksIT.Core.Tests.Security {
       var salt = "   ";
 
       // Act
-      var result = PasswordHasher.TryValidateHash(password, salt, storedHash, out var isValid, out var errorMessage);
+      var result = PasswordHasher.TryValidateHash(password, salt, storedHash, Pepper, out var isValid, out var errorMessage);
 
       // Assert
       Assert.True(result);
@@ -122,7 +124,7 @@ namespace MaksIT.Core.Tests.Security {
       var invalidSalt = "InvalidSaltValue";
 
       // Act
-      var result = PasswordHasher.TryValidateHash(password, invalidSalt, invalidStoredHash, out var isValid, out var errorMessage);
+      var result = PasswordHasher.TryValidateHash(password, invalidSalt, invalidStoredHash, Pepper, out var isValid, out var errorMessage);
 
       // Assert
       Assert.True(result);
@@ -136,8 +138,8 @@ namespace MaksIT.Core.Tests.Security {
       var password = "SecurePassword123!";
 
       // Act
-      PasswordHasher.TryCreateSaltedHash(password, out var hashResult1, out var errorMessage1);
-      PasswordHasher.TryCreateSaltedHash(password, out var hashResult2, out var errorMessage2);
+      PasswordHasher.TryCreateSaltedHash(password, Pepper, out var hashResult1, out var errorMessage1);
+      PasswordHasher.TryCreateSaltedHash(password, Pepper, out var hashResult2, out var errorMessage2);
 
       // Assert
       Assert.NotEqual(hashResult1?.Hash, hashResult2?.Hash);
@@ -147,7 +149,7 @@ namespace MaksIT.Core.Tests.Security {
     public void ValidateHash_ModifiedStoredHash_ReturnsFalse() {
       // Arrange
       var password = "SecurePassword123!";
-      PasswordHasher.TryCreateSaltedHash(password, out var hashResult, out var createErrorMessage);
+      PasswordHasher.TryCreateSaltedHash(password, Pepper, out var hashResult, out var createErrorMessage);
 
       // Modify the stored hash
       var hashChars = hashResult?.Hash.ToCharArray();
@@ -157,7 +159,7 @@ namespace MaksIT.Core.Tests.Security {
       var modifiedHash = new string(hashChars);
 
       // Act
-      var result = PasswordHasher.TryValidateHash(password, hashResult?.Salt, modifiedHash, out var isValid, out var validateErrorMessage);
+      var result = PasswordHasher.TryValidateHash(password, hashResult?.Salt, modifiedHash, Pepper, out var isValid, out var validateErrorMessage);
 
       // Assert
       Assert.True(result);
@@ -172,8 +174,8 @@ namespace MaksIT.Core.Tests.Security {
       var password2 = "PasswordTwo";
 
       // Act
-      PasswordHasher.TryCreateSaltedHash(password1, out var hashResult1, out var errorMessage1);
-      PasswordHasher.TryCreateSaltedHash(password2, out var hashResult2, out var errorMessage2);
+      PasswordHasher.TryCreateSaltedHash(password1, Pepper, out var hashResult1, out var errorMessage1);
+      PasswordHasher.TryCreateSaltedHash(password2, Pepper, out var hashResult2, out var errorMessage2);
 
       // Assert
       Assert.NotEqual(hashResult1?.Hash, hashResult2?.Hash);
@@ -185,7 +187,7 @@ namespace MaksIT.Core.Tests.Security {
       var password = "SecurePassword123!";
 
       // Act
-      var result = PasswordHasher.TryCreateSaltedHash(password, out var saltedHash, out var errorMessage);
+      var result = PasswordHasher.TryCreateSaltedHash(password, Pepper, out var saltedHash, out var errorMessage);
 
       // Assert
       // For 16 bytes salt, Base64 length is 24 characters

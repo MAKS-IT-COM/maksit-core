@@ -868,17 +868,18 @@ ChecksumUtility.TryCalculateCRC32Checksum(data, out var checksum, out var error)
 
 ### Password Hasher
 
-The `PasswordHasher` class provides methods for securely hashing and validating passwords.
+The `PasswordHasher` class provides methods for securely hashing and validating passwords using salt and pepper.
 
 ---
 
 #### Features
 
-1. **Salted Hashing**:
-   - Hash passwords with a unique salt.
-
+1. **Salted & Peppered Hashing**:
+   - Hash passwords with a unique salt and a required application-level pepper (secret).
 2. **Validation**:
-   - Validate passwords against stored hashes.
+   - Validate passwords against stored hashes using the same salt and pepper.
+3. **Strong Security**:
+   - Uses PBKDF2 with HMACSHA512 and 100,000 iterations.
 
 ---
 
@@ -886,8 +887,55 @@ The `PasswordHasher` class provides methods for securely hashing and validating 
 
 ##### Hashing a Password
 ```csharp
-PasswordHasher.TryCreateSaltedHash("password", out var hash, out var error);
+const string pepper = "YourAppSecretPepper";
+PasswordHasher.TryCreateSaltedHash("password", pepper, out var hashResult, out var error);
+// hashResult.Salt and hashResult.Hash are Base64 strings
 ```
+
+##### Validating a Password
+```csharp
+const string pepper = "YourAppSecretPepper";
+PasswordHasher.TryValidateHash("password", hashResult.Salt, hashResult.Hash, pepper, out var isValid, out var error);
+```
+
+---
+
+#### API
+
+```csharp
+public static bool TryCreateSaltedHash(
+    string value,
+    string pepper,
+    out (string Salt, string Hash)? saltedHash,
+    out string? errorMessage)
+```
+- `value`: The password to hash.
+- `pepper`: Application-level secret (not stored with the hash).
+- `saltedHash`: Tuple containing the generated salt and hash (Base64 strings).
+- `errorMessage`: Error message if hashing fails.
+
+```csharp
+public static bool TryValidateHash(
+    string value,
+    string salt,
+    string hash,
+    string pepper,
+    out bool isValid,
+    out string? errorMessage)
+```
+- `value`: The password to validate.
+- `salt`: The Base64-encoded salt used for hashing.
+- `hash`: The Base64-encoded hash to validate against.
+- `pepper`: Application-level secret (must match the one used for hashing).
+- `isValid`: True if the password is valid.
+- `errorMessage`: Error message if validation fails.
+
+---
+
+#### Security Notes
+- **Pepper** should be kept secret and not stored alongside the hash or salt.
+- Changing the pepper will invalidate all existing password hashes.
+- Always use a strong, random pepper value for your application.
 
 ---
 

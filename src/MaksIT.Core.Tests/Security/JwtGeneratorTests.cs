@@ -7,15 +7,15 @@ namespace MaksIT.Core.Tests.Security {
 
 
     private JWTTokenGenerateRequest jWTTokenGenerateRequest = new JWTTokenGenerateRequest {
-    Secret = "supersecretkey12345678901234567890",
-    Issuer = "testIssuer",
-    Audience = "testAudience",
-    Expiration = 30, // 30 minutes
-    Username = "testUser",
-    Roles = new List<string> { "Admin", "User" },
-  };
+      Secret = "supersecretkey12345678901234567890",
+      Issuer = "testIssuer",
+      Audience = "testAudience",
+      Expiration = 30, // 30 minutes
+      Username = "testUser",
+      Roles = new List<string> { "Admin", "User" },
+    };
 
-  [Fact]
+    [Fact]
     public void GenerateToken_ShouldReturnValidToken() {
       // Act
       var result = JwtGenerator.TryGenerateToken(jWTTokenGenerateRequest, out var tokenData, out var errorMessage);
