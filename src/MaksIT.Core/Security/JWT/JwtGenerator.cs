@@ -1,15 +1,12 @@
-﻿using Microsoft.IdentityModel.Tokens;
-using System.Diagnostics.CodeAnalysis;
-using System.IdentityModel.Tokens.Jwt;
+﻿using System.Text;
 using System.Security.Claims;
 using System.Security.Cryptography;
-using System.Text;
+using System.IdentityModel.Tokens.Jwt;
+using System.Diagnostics.CodeAnalysis;
+using Microsoft.IdentityModel.Tokens;
 
 
 namespace MaksIT.Core.Security.JWT;
-
-
-
 
 public static class JwtGenerator {
   /// <summary>

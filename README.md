@@ -27,6 +27,8 @@
   - [Checksum Utility](#checksum-utility)
   - [Password Hasher](#password-hasher)
   - [JWT Generator](#jwt-generator)
+  - [JWK Generator](#jwk-generator)
+  - [JWS Generator](#jws-generator)
   - [TOTP Generator](#totp-generator)
 - [Web API Models](#web-api-models)
 - [Sagas](#sagas)
@@ -958,6 +960,62 @@ The `JwtGenerator` class provides methods for generating and validating JSON Web
 #### Example Usage
 
 ##### Generating a Token
+```csharp
+JwtGenerator.TryGenerateToken(secret, issuer, audience, 60, "user", roles, out var token, out var error);
+```
+
+---
+
+### JWK Generator
+
+The `JwkGenerator` class provides methods for generating and managing JSON Web Keys (JWK) for cryptographic operations. It supports RSA, EC, and symmetric keys, and provides thumbprint computation and key serialization.
+
+#### Features
+- Key Generation: Generate RSA, EC, and symmetric (octet) JWKs, with or without private key material.
+- Thumbprint Computation: Compute RFC 7638-compliant thumbprints for JWKs.
+- Key Serialization: Export and import JWKs for interoperability.
+- Try Pattern: All methods use the Try-pattern for safe error handling.
+
+#### Example Usage
+```csharp
+// Generate a new RSA JWK (public only)
+JwkGenerator.TryGenerateRsa(2048, false, null, null, null, out var jwk, out var error);
+// Generate a new EC JWK (private)
+JwkGenerator.TryGenerateEc(JwkCurve.P256, true, null, null, null, out var ecJwk, out var error);
+// Compute a thumbprint
+JwkGenerator.TryComputeThumbprint(jwk, out var thumbprint, out var error);
+```
+
+---
+
+### JWS Generator
+
+The `JwsGenerator` class provides methods for creating and verifying JSON Web Signatures (JWS) using JWKs. It supports signing payloads with RSA keys and produces JWS objects with protected headers, payload, and signature.
+
+#### Features
+- JWS Creation: Sign string, byte[], or object payloads using RSA JWKs.
+- Try Pattern: All methods use the Try-pattern for safe error handling.
+- Key Authorization: Generate key authorization strings for ACME/Let's Encrypt flows.
+
+#### Example Usage
+```csharp
+// Sign a payload
+JwsGenerator.TryEncode(rsa, jwk, new JwsHeader(), "payload", out var jws, out var error);
+// Generate key authorization
+JwsGenerator.TryGetKeyAuthorization(jwk, "token", out var keyAuth, out var error);
+```
+
+---
+
+### JWT Generator
+
+The `JwtGenerator` class provides methods for generating and validating JSON Web Tokens (JWTs).
+
+#### Features
+- Token Generation: Generate JWTs with claims and metadata.
+- Token Validation: Validate JWTs against a secret.
+
+#### Example Usage
 ```csharp
 JwtGenerator.TryGenerateToken(secret, issuer, audience, 60, "user", roles, out var token, out var error);
 ```
