@@ -10,16 +10,16 @@ public class JwkGeneratorTests
         var result = JwkGenerator.TryGenerateRsa(2048, false, null, null, null, out var jwk, out var errorMessage);
         Assert.True(result, errorMessage);
         Assert.NotNull(jwk);
-        Assert.Equal(JwkKeyType.Rsa.Name, jwk.Kty);
-        Assert.NotNull(jwk.N);
-        Assert.NotNull(jwk.E);
-        Assert.Null(jwk.D);
-        Assert.Null(jwk.P);
-        Assert.Null(jwk.Q);
-        Assert.Null(jwk.DP);
-        Assert.Null(jwk.DQ);
-        Assert.Null(jwk.QI);
-        Assert.False(string.IsNullOrWhiteSpace(jwk.Kid));
+        Assert.Equal(JwkKeyType.Rsa.Name, jwk.KeyType);
+        Assert.NotNull(jwk.RsaModulus);
+        Assert.NotNull(jwk.RsaExponent);
+        Assert.Null(jwk.PrivateKey);
+        Assert.Null(jwk.RsaFirstPrimeFactor);
+        Assert.Null(jwk.RsaSecondPrimeFactor);
+        Assert.Null(jwk.RsaFirstFactorCRTExponent);
+        Assert.Null(jwk.RsaSecondFactorCRTExponent);
+        Assert.Null(jwk.RsaFirstCRTCoefficient);
+        Assert.False(string.IsNullOrWhiteSpace(jwk.KeyId));
     }
 
     [Fact]
@@ -28,13 +28,13 @@ public class JwkGeneratorTests
         var result = JwkGenerator.TryGenerateRsa(2048, true, null, null, null, out var jwk, out var errorMessage);
         Assert.True(result, errorMessage);
         Assert.NotNull(jwk);
-        Assert.Equal(JwkKeyType.Rsa.Name, jwk.Kty);
-        Assert.NotNull(jwk.D);
-        Assert.NotNull(jwk.P);
-        Assert.NotNull(jwk.Q);
-        Assert.NotNull(jwk.DP);
-        Assert.NotNull(jwk.DQ);
-        Assert.NotNull(jwk.QI);
+        Assert.Equal(JwkKeyType.Rsa.Name, jwk.KeyType);
+        Assert.NotNull(jwk.PrivateKey);
+        Assert.NotNull(jwk.RsaFirstPrimeFactor);
+        Assert.NotNull(jwk.RsaSecondPrimeFactor);
+        Assert.NotNull(jwk.RsaFirstFactorCRTExponent);
+        Assert.NotNull(jwk.RsaSecondFactorCRTExponent);
+        Assert.NotNull(jwk.RsaFirstCRTCoefficient);
     }
 
     [Theory]
@@ -47,12 +47,12 @@ public class JwkGeneratorTests
         var result = JwkGenerator.TryGenerateEc(curveObj, false, null, null, null, out var jwk, out var errorMessage);
         Assert.True(result, errorMessage);
         Assert.NotNull(jwk);
-        Assert.Equal(JwkKeyType.Ec.Name, jwk.Kty);
-        Assert.Equal(curve, jwk.Crv);
-        Assert.NotNull(jwk.X);
-        Assert.NotNull(jwk.Y);
-        Assert.Null(jwk.D_EC);
-        Assert.False(string.IsNullOrWhiteSpace(jwk.Kid));
+        Assert.Equal(JwkKeyType.Ec.Name, jwk.KeyType);
+        Assert.Equal(curve, jwk.EcCurve);
+        Assert.NotNull(jwk.EcX);
+        Assert.NotNull(jwk.EcY);
+        Assert.Null(jwk.PrivateKey);
+        Assert.False(string.IsNullOrWhiteSpace(jwk.KeyId));
     }
 
     [Theory]
@@ -65,9 +65,9 @@ public class JwkGeneratorTests
         var result = JwkGenerator.TryGenerateEc(curveObj, true, null, null, null, out var jwk, out var errorMessage);
         Assert.True(result, errorMessage);
         Assert.NotNull(jwk);
-        Assert.Equal(JwkKeyType.Ec.Name, jwk.Kty);
-        Assert.Equal(curve, jwk.Crv);
-        Assert.NotNull(jwk.D_EC);
+        Assert.Equal(JwkKeyType.Ec.Name, jwk.KeyType);
+        Assert.Equal(curve, jwk.EcCurve);
+        Assert.NotNull(jwk.PrivateKey);
     }
 
     [Fact]
@@ -76,9 +76,9 @@ public class JwkGeneratorTests
         var result = JwkGenerator.TryGenerateOct(256, null, null, null, out var jwk, out var errorMessage);
         Assert.True(result, errorMessage);
         Assert.NotNull(jwk);
-        Assert.Equal(JwkKeyType.Oct.Name, jwk.Kty);
-        Assert.NotNull(jwk.K);
-        Assert.False(string.IsNullOrWhiteSpace(jwk.Kid));
+        Assert.Equal(JwkKeyType.Oct.Name, jwk.KeyType);
+        Assert.NotNull(jwk.SymmetricKey);
+        Assert.False(string.IsNullOrWhiteSpace(jwk.KeyId));
     }
 
     [Fact]
@@ -102,6 +102,6 @@ public class JwkGeneratorTests
         Assert.True(result2, errorMessage2);
         Assert.NotNull(jwk1);
         Assert.NotNull(jwk2);
-        Assert.NotEqual(jwk1.Kid, jwk2.Kid);
+        Assert.NotEqual(jwk1.KeyId, jwk2.KeyId);
     }
 }

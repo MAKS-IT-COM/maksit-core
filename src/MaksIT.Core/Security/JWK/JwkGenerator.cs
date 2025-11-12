@@ -4,10 +4,11 @@ using System.Text.Json.Serialization;
 using System.Diagnostics.CodeAnalysis;
 using MaksIT.Core.Extensions;
 
+
 namespace MaksIT.Core.Security.JWK;
 
 /// <summary>
-/// Provides utilities for JWK (JSON Web Key) operations, including RFC 7638 thumbprint computation and key generation.
+/// Provides utilities for JWK (JSON Web Key) operations, including RFC7638 thumbprint computation and key generation.
 /// </summary>
 public static class JwkGenerator {
   public static bool TryGenerateRsa(int keySize, bool includePrivate, JwkAlgorithm? alg, string? use, string[]? keyOps, [NotNullWhen(true)] out Jwk? jwk, [NotNullWhen(false)] out string? errorMessage) {
@@ -15,7 +16,8 @@ public static class JwkGenerator {
       jwk = GenerateRsa(keySize, includePrivate, alg, use, keyOps);
       errorMessage = null;
       return true;
-    } catch (Exception ex) {
+    }
+    catch (Exception ex) {
       jwk = null;
       errorMessage = ex.Message;
       return false;
@@ -27,7 +29,8 @@ public static class JwkGenerator {
       jwk = GenerateEc(curve, includePrivate, alg, use, keyOps);
       errorMessage = null;
       return true;
-    } catch (Exception ex) {
+    }
+    catch (Exception ex) {
       jwk = null;
       errorMessage = ex.Message;
       return false;
@@ -39,7 +42,8 @@ public static class JwkGenerator {
       jwk = GenerateOct(keySizeBits, alg, use, keyOps);
       errorMessage = null;
       return true;
-    } catch (Exception ex) {
+    }
+    catch (Exception ex) {
       jwk = null;
       errorMessage = ex.Message;
       return false;
@@ -51,7 +55,8 @@ public static class JwkGenerator {
       jwk = GenerateRsaFromRsa(rsa, includePrivate, alg, use, keyOps);
       errorMessage = null;
       return true;
-    } catch (Exception ex) {
+    }
+    catch (Exception ex) {
       jwk = null;
       errorMessage = ex.Message;
       return false;
@@ -59,9 +64,9 @@ public static class JwkGenerator {
   }
 
   public static bool TryComputeThumbprint(
-      Jwk jwk,
-      [NotNullWhen(true)] out string? thumbprint,
-      [NotNullWhen(false)] out string? errorMessage) {
+  Jwk jwk,
+  [NotNullWhen(true)] out string? thumbprint,
+  [NotNullWhen(false)] out string? errorMessage) {
     thumbprint = null;
     errorMessage = null;
 
@@ -69,17 +74,17 @@ public static class JwkGenerator {
       errorMessage = "JWK cannot be null.";
       return false;
     }
-    if (string.IsNullOrEmpty(jwk.E) || string.IsNullOrEmpty(jwk.N)) {
-      errorMessage = "JWK must have Exponent and Modulus set.";
+    if (string.IsNullOrEmpty(jwk.RsaExponent) || string.IsNullOrEmpty(jwk.RsaModulus)) {
+      errorMessage = "JWK must have RsaExponent and RsaModulus set.";
       return false;
     }
 
     try {
-      // RFC 7638: Lexicographic order: e, kty, n
+      // RFC7638: Lexicographic order: e, kty, n
       var orderedJwk = new OrderedJwk {
-        E = jwk.E!,
+        E = jwk.RsaExponent!,
         Kty = "RSA",
-        N = jwk.N!
+        N = jwk.RsaModulus!
       };
 
       var json = orderedJwk.ToJson();
@@ -97,22 +102,22 @@ public static class JwkGenerator {
     using var rsa = RSA.Create(keySize);
     var parameters = rsa.ExportParameters(includePrivate);
     var jwk = new Jwk {
-      Kty = JwkKeyType.Rsa.Name,
-      N = Base64UrlEncode(parameters.Modulus!),
-      E = Base64UrlEncode(parameters.Exponent!),
-      Alg = (alg ?? (keySize >= 4096 ? JwkAlgorithm.Rs512 : JwkAlgorithm.Rs256)).Name,
-      Use = use,
-      KeyOps = keyOps,
+      KeyType = JwkKeyType.Rsa.Name,
+      RsaModulus = Base64UrlEncode(parameters.Modulus!),
+      RsaExponent = Base64UrlEncode(parameters.Exponent!),
+      Algorithm = (alg ?? (keySize >= 4096 ? JwkAlgorithm.Rs512 : JwkAlgorithm.Rs256)).Name,
+      KeyUse = use,
+      KeyOperations = keyOps,
     };
     if (includePrivate) {
-      jwk.D = Base64UrlEncode(parameters.D!);
-      jwk.P = Base64UrlEncode(parameters.P!);
-      jwk.Q = Base64UrlEncode(parameters.Q!);
-      jwk.DP = Base64UrlEncode(parameters.DP!);
-      jwk.DQ = Base64UrlEncode(parameters.DQ!);
-      jwk.QI = Base64UrlEncode(parameters.InverseQ!);
+      jwk.PrivateKey = Base64UrlEncode(parameters.D!);
+      jwk.RsaFirstPrimeFactor = Base64UrlEncode(parameters.P!);
+      jwk.RsaSecondPrimeFactor = Base64UrlEncode(parameters.Q!);
+      jwk.RsaFirstFactorCRTExponent = Base64UrlEncode(parameters.DP!);
+      jwk.RsaSecondFactorCRTExponent = Base64UrlEncode(parameters.DQ!);
+      jwk.RsaFirstCRTCoefficient = Base64UrlEncode(parameters.InverseQ!);
     }
-    jwk.Kid = ComputeKid(jwk);
+    jwk.KeyId = ComputeKid(jwk);
     return jwk;
   }
 
@@ -127,31 +132,31 @@ public static class JwkGenerator {
     using var ec = ECDsa.Create(ecCurve);
     var parameters = ec.ExportParameters(includePrivate);
     var jwk = new Jwk {
-      Kty = JwkKeyType.Ec.Name,
-      Crv = curve.Name,
-      X = Base64UrlEncode(parameters.Q.X!),
-      Y = Base64UrlEncode(parameters.Q.Y!),
-      Alg = (alg ?? (curve == JwkCurve.P384 ? JwkAlgorithm.Es384 : curve == JwkCurve.P521 ? JwkAlgorithm.Es512 : JwkAlgorithm.Es256)).Name,
-      Use = use,
-      KeyOps = keyOps,
+      KeyType = JwkKeyType.Ec.Name,
+      EcCurve = curve.Name,
+      EcX = Base64UrlEncode(parameters.Q.X!),
+      EcY = Base64UrlEncode(parameters.Q.Y!),
+      Algorithm = (alg ?? (curve == JwkCurve.P384 ? JwkAlgorithm.Es384 : curve == JwkCurve.P521 ? JwkAlgorithm.Es512 : JwkAlgorithm.Es256)).Name,
+      KeyUse = use,
+      KeyOperations = keyOps,
     };
     if (includePrivate && parameters.D != null) {
-      jwk.D_EC = Base64UrlEncode(parameters.D);
+      jwk.PrivateKey = Base64UrlEncode(parameters.D);
     }
-    jwk.Kid = ComputeKid(jwk);
+    jwk.KeyId = ComputeKid(jwk);
     return jwk;
   }
 
   private static Jwk GenerateOct(int keySizeBits = 256, JwkAlgorithm? alg = null, string? use = null, string[]? keyOps = null) {
     var key = RandomNumberGenerator.GetBytes(keySizeBits / 8);
     var jwk = new Jwk {
-      Kty = JwkKeyType.Oct.Name,
-      K = Base64UrlEncode(key),
-      Alg = (alg ?? (keySizeBits == 256 ? JwkAlgorithm.A256Gcm : keySizeBits == 128 ? JwkAlgorithm.A128Gcm : JwkAlgorithm.A512Gcm)).Name,
-      Use = use,
-      KeyOps = keyOps,
+      KeyType = JwkKeyType.Oct.Name,
+      SymmetricKey = Base64UrlEncode(key),
+      Algorithm = (alg ?? (keySizeBits == 256 ? JwkAlgorithm.A256Gcm : keySizeBits == 128 ? JwkAlgorithm.A128Gcm : JwkAlgorithm.A512Gcm)).Name,
+      KeyUse = use,
+      KeyOperations = keyOps,
     };
-    jwk.Kid = ComputeKid(jwk);
+    jwk.KeyId = ComputeKid(jwk);
     return jwk;
   }
 
@@ -159,22 +164,22 @@ public static class JwkGenerator {
     if (rsa == null) throw new ArgumentNullException(nameof(rsa));
     var parameters = rsa.ExportParameters(includePrivate);
     var jwk = new Jwk {
-      Kty = JwkKeyType.Rsa.Name,
-      N = Base64UrlUtility.Encode(parameters.Modulus!),
-      E = Base64UrlUtility.Encode(parameters.Exponent!),
-      Alg = (alg ?? JwkAlgorithm.Rs256).Name,
-      Use = use,
-      KeyOps = keyOps,
+      KeyType = JwkKeyType.Rsa.Name,
+      RsaModulus = Base64UrlUtility.Encode(parameters.Modulus!),
+      RsaExponent = Base64UrlUtility.Encode(parameters.Exponent!),
+      Algorithm = (alg ?? JwkAlgorithm.Rs256).Name,
+      KeyUse = use,
+      KeyOperations = keyOps,
     };
     if (includePrivate) {
-      jwk.D = Base64UrlUtility.Encode(parameters.D!);
-      jwk.P = Base64UrlUtility.Encode(parameters.P!);
-      jwk.Q = Base64UrlUtility.Encode(parameters.Q!);
-      jwk.DP = Base64UrlUtility.Encode(parameters.DP!);
-      jwk.DQ = Base64UrlUtility.Encode(parameters.DQ!);
-      jwk.QI = Base64UrlUtility.Encode(parameters.InverseQ!);
+      jwk.PrivateKey = Base64UrlUtility.Encode(parameters.D!);
+      jwk.RsaFirstPrimeFactor = Base64UrlUtility.Encode(parameters.P!);
+      jwk.RsaSecondPrimeFactor = Base64UrlUtility.Encode(parameters.Q!);
+      jwk.RsaFirstFactorCRTExponent = Base64UrlUtility.Encode(parameters.DP!);
+      jwk.RsaSecondFactorCRTExponent = Base64UrlUtility.Encode(parameters.DQ!);
+      jwk.RsaFirstCRTCoefficient = Base64UrlUtility.Encode(parameters.InverseQ!);
     }
-    jwk.Kid = ComputeKid(jwk);
+    jwk.KeyId = ComputeKid(jwk);
     return jwk;
   }
 
@@ -184,15 +189,15 @@ public static class JwkGenerator {
 
   private static string ComputeKid(Jwk jwk) {
     // Use thumbprint as kid if possible
-    if (jwk.Kty == "RSA" && !string.IsNullOrEmpty(jwk.N) && !string.IsNullOrEmpty(jwk.E)) {
+    if (jwk.KeyType == "RSA" && !string.IsNullOrEmpty(jwk.RsaModulus) && !string.IsNullOrEmpty(jwk.RsaExponent)) {
       TryComputeThumbprint(jwk, out var thumb, out _);
       return thumb ?? Guid.NewGuid().ToString("N");
     }
     // For EC and oct, use a hash of the key material
     using var sha = SHA256.Create();
-    string keyMaterial = jwk.Kty switch {
-      "EC" => jwk.X + jwk.Y + jwk.Crv,
-      "oct" => jwk.K,
+    string keyMaterial = jwk.KeyType switch {
+      "EC" => jwk.EcX + jwk.EcY + jwk.EcCurve,
+      "oct" => jwk.SymmetricKey,
       _ => null
     } ?? Guid.NewGuid().ToString();
     var hash = sha.ComputeHash(Encoding.UTF8.GetBytes(keyMaterial));

@@ -1,6 +1,5 @@
-using System;
-using System.Buffers;
 using System.Text;
+
 
 namespace MaksIT.Core.Security.JWK;
 
@@ -14,8 +13,11 @@ public static class Base64UrlUtility
     /// </summary>
     public static string Encode(byte[] data)
     {
-        if (data == null) throw new ArgumentNullException(nameof(data));
+        if (data == null)
+          throw new ArgumentNullException(nameof(data));
+
         string base64 = Convert.ToBase64String(data);
+
         return base64.TrimEnd('=')
                      .Replace('+', '-')
                      .Replace('/', '_');
@@ -26,7 +28,9 @@ public static class Base64UrlUtility
     /// </summary>
     public static string Encode(string value)
     {
-        if (value == null) throw new ArgumentNullException(nameof(value));
+        if (value == null)
+          throw new ArgumentNullException(nameof(value));
+
         return Encode(Encoding.UTF8.GetBytes(value));
     }
 
@@ -35,13 +39,17 @@ public static class Base64UrlUtility
     /// </summary>
     public static byte[] Decode(string base64Url)
     {
-        if (base64Url == null) throw new ArgumentNullException(nameof(base64Url));
+        if (base64Url == null)
+          throw new ArgumentNullException(nameof(base64Url));
+
         string padded = base64Url.Replace('-', '+').Replace('_', '/');
+
         switch (base64Url.Length % 4)
         {
             case 2: padded += "=="; break;
             case 3: padded += "="; break;
         }
+
         return Convert.FromBase64String(padded);
     }
 
