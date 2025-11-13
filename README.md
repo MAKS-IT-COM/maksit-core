@@ -987,7 +987,7 @@ using System.Security.Cryptography;
 using MaksIT.Core.Security.JWK;
 
 using var rsa = RSA.Create(2048);
-var result = JwkGenerator.TryGenerateFromRCA(rsa, out var jwk, out var errorMessage);
+var result = JwkGenerator.TryGenerateFromRSA(rsa, out var jwk, out var errorMessage);
 if (result)
 {
  // jwk contains KeyType, RsaExponent, RsaModulus
@@ -1004,9 +1004,9 @@ else
 #### API
 
 ```csharp
-public static bool TryGenerateFromRCA(
+public static bool TryGenerateFromRSA(
  RSA rsa,
- out Jwk? jwk,
+ [NotNullWhen(true)] out Jwk? jwk,
  [NotNullWhen(false)] out string? errorMessage
 )
 ```
@@ -1068,7 +1068,7 @@ public static bool TryEncode(
  RSA rsa,
  Jwk jwk,
  JwsHeader protectedHeader,
- out JwsMessage? message,
+ [NotNullWhen(true)]out JwsMessage? message,
  [NotNullWhen(false)] out string? errorMessage
 )
 ```
@@ -1080,7 +1080,7 @@ public static bool TryEncode<T>(
  Jwk jwk,
  JwsHeader protectedHeader,
  T? payload,
- out JwsMessage? message,
+ [NotNullWhen(true)] out JwsMessage? message,
  [NotNullWhen(false)] out string? errorMessage
 )
 ```
@@ -1153,7 +1153,7 @@ else
 ```csharp
 public static bool TryGetSha256Thumbprint(
  Jwk jwk,
- out string? thumbprint,
+ [NotNullWhen(true)] out string? thumbprint,
  [NotNullWhen(false)] out string? errorMessage
 )
 ```
@@ -1163,7 +1163,7 @@ public static bool TryGetSha256Thumbprint(
 public static bool TryGetKeyAuthorization(
  Jwk jwk,
  string token,
- out string? keyAuthorization,
+ [NotNullWhen(true)] out string? keyAuthorization,
  [NotNullWhen(false)] out string? errorMessage
 )
 ```

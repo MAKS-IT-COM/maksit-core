@@ -12,7 +12,7 @@ public static class JwsGenerator {
     RSA rsa,
     Jwk jwk,
     JwsHeader protectedHeader,
-    out JwsMessage? message,
+    [NotNullWhen(true)] out JwsMessage? message,
     [NotNullWhen(false)] out string? errorMessage
   ) => TryEncode<string>(rsa, jwk, protectedHeader, null, out message, out errorMessage);
 
@@ -22,7 +22,7 @@ public static class JwsGenerator {
     Jwk jwk,
     JwsHeader protectedHeader,
     T? payload,
-    out JwsMessage? message,
+    [NotNullWhen(true)] out JwsMessage? message,
     [NotNullWhen(false)] out string? errorMessage
   ) {
     try {

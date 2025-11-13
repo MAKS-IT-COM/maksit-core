@@ -13,7 +13,7 @@ public static class JwkThumbprintUtility {
   public static bool TryGetKeyAuthorization(
     Jwk jwk,
     string token,
-    out string? keyAuthorization,
+    [NotNullWhen(true)] out string? keyAuthorization,
     [NotNullWhen(false)] out string? errorMessage
   ) {
     keyAuthorization = null;
@@ -32,7 +32,7 @@ public static class JwkThumbprintUtility {
   /// </summary>
   public static bool TryGetSha256Thumbprint(
     Jwk jwk,
-    out string? thumbprint,
+    [NotNullWhen(true)] out string? thumbprint,
     [NotNullWhen(false)] out string? errorMessage
   ) {
     thumbprint = null;

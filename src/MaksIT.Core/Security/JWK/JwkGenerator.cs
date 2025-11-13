@@ -8,8 +8,9 @@ namespace MaksIT.Core.Security.JWK;
 /// Provides utilities for JWK (JSON Web Key) operations, including RFC7638 thumbprint computation and key generation.
 /// </summary>
 public static class JwkGenerator {
-  public static bool TryGenerateFromRCA(
+  public static bool TryGenerateFromRSA(
     RSA rsa,
+    [NotNullWhen(true)]
     out Jwk? jwk,
     [NotNullWhen(false)] out string? errorMessage
 ) {
