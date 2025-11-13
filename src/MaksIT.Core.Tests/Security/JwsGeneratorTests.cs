@@ -1,5 +1,5 @@
-﻿using System.Text;
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
+using MaksIT.Core.Security;
 using MaksIT.Core.Security.JWK;
 using MaksIT.Core.Security.JWS;
 
@@ -7,78 +7,91 @@ using MaksIT.Core.Security.JWS;
 namespace MaksIT.Core.Tests.Security;
 
 public class JwsGeneratorTests {
-  private static (RSA rsa, Jwk jwk) GenerateRsaAndJwk() {
-    var rsa = RSA.Create(2048);
-    var result = JwkGenerator.TryGenerateRsaFromRsa(rsa, true, null, null, null, out var jwk, out var errorMessage);
-    Assert.True(result, errorMessage);
+  [Fact]
+  public void TryEncode_ValidRsaAndJwk_ReturnsTrueAndMessage()
+  {
+    using var rsa = RSA.Create(2048);
+    var jwkResult = JwkGenerator.TryGenerateFromRCA(rsa, out var jwk, out var jwkError);
+    Assert.True(jwkResult);
     Assert.NotNull(jwk);
-    return (rsa, jwk);
+    var header = new JwsHeader();
+    var result = JwsGenerator.TryEncode(rsa, jwk!, header, out var message, out var error);
+    Assert.True(result);
+    Assert.NotNull(message);
+    Assert.Null(error);
+    Assert.False(string.IsNullOrEmpty(message!.Protected));
+    Assert.False(string.IsNullOrEmpty(message.Signature));
   }
 
   [Fact]
-  public void Encode_WithStringPayload_ProducesValidJws() {
-    var (rsa, jwk) = GenerateRsaAndJwk();
+  public void TryEncode_WithPayload_ReturnsEncodedPayload()
+  {
+    using var rsa = RSA.Create(2048);
+    var jwkResult = JwkGenerator.TryGenerateFromRCA(rsa, out var jwk, out var jwkError);
+    Assert.True(jwkResult);
+    Assert.NotNull(jwk);
     var header = new JwsHeader();
     var payload = "test-payload";
-
-    var result = JwsGenerator.TryEncode(rsa, jwk, header, payload, out var jws, out var errorMessage);
-    Assert.True(result, errorMessage);
-    Assert.NotNull(jws);
-    Assert.False(string.IsNullOrEmpty(jws.Protected));
-    Assert.False(string.IsNullOrEmpty(jws.Payload));
-    Assert.False(string.IsNullOrEmpty(jws.Signature));
+    var result = JwsGenerator.TryEncode(rsa, jwk!, header, payload, out var message, out var error);
+    Assert.True(result);
+    Assert.NotNull(message);
+    Assert.Null(error);
+    Assert.False(string.IsNullOrEmpty(message!.Payload));
+    // Decoded payload should match
+    var decoded = Base64UrlUtility.DecodeToString(message.Payload);
+    Assert.Equal(payload, decoded);
   }
 
   [Fact]
-  public void Encode_WithByteArrayPayload_ProducesValidJws() {
-    var (rsa, jwk) = GenerateRsaAndJwk();
+  public void TryEncode_InvalidRsa_ReturnsFalseAndError()
+  {
+    var fakeRsa = new FakeRsaThrows();
+    var jwk = new Jwk { KeyType = JwkKeyType.Rsa.Name };
     var header = new JwsHeader();
-    var payload = Encoding.UTF8.GetBytes("test-bytes");
-
-    var result = JwsGenerator.TryEncode(rsa, jwk, header, payload, out var jws, out var errorMessage);
-    Assert.True(result, errorMessage);
-    Assert.NotNull(jws);
-    Assert.False(string.IsNullOrEmpty(jws.Protected));
-    Assert.False(string.IsNullOrEmpty(jws.Payload));
-    Assert.False(string.IsNullOrEmpty(jws.Signature));
+    var result = JwsGenerator.TryEncode(fakeRsa, jwk, header, out var message, out var error);
+    Assert.False(result);
+    Assert.Null(message);
+    Assert.NotNull(error);
   }
 
   [Fact]
-  public void Encode_WithGenericPayload_ProducesValidJws() {
-    var (rsa, jwk) = GenerateRsaAndJwk();
+  public void TryEncode_JwkWithKeyId_SetsHeaderKid()
+  {
+    using var rsa = RSA.Create(2048);
+    var jwk = new Jwk { KeyType = JwkKeyType.Rsa.Name, KeyId = "my-key-id" };
     var header = new JwsHeader();
-    var payload = new { foo = "bar", n = 42 };
-
-    var result = JwsGenerator.TryEncode(rsa, jwk, header, payload, out var jws, out var errorMessage);
-    Assert.True(result, errorMessage);
-    Assert.NotNull(jws);
-    Assert.False(string.IsNullOrEmpty(jws.Protected));
-    Assert.False(string.IsNullOrEmpty(jws.Payload));
-    Assert.False(string.IsNullOrEmpty(jws.Signature));
+    var result = JwsGenerator.TryEncode(rsa, jwk, header, out var message, out var error);
+    Assert.True(result);
+    Assert.NotNull(message);
+    Assert.Null(error);
+    // Decode protected header
+    var protectedJson = Base64UrlUtility.DecodeToString(message!.Protected);
+    Assert.Contains("my-key-id", protectedJson);
   }
 
   [Fact]
-  public void Encode_PostAsGet_ProducesValidJws() {
-    var (rsa, jwk) = GenerateRsaAndJwk();
+  public void TryEncode_JwkWithoutKeyId_SetsHeaderJwk()
+  {
+    using var rsa = RSA.Create(2048);
+    var jwk = new Jwk { KeyType = JwkKeyType.Rsa.Name };
     var header = new JwsHeader();
-
-    var result = JwsGenerator.TryEncode(rsa, jwk, header, out var jws, out var errorMessage);
-    Assert.True(result, errorMessage);
-    Assert.NotNull(jws);
-    Assert.False(string.IsNullOrEmpty(jws.Protected));
-    Assert.Equal(string.Empty, jws.Payload);
-    Assert.False(string.IsNullOrEmpty(jws.Signature));
+    var result = JwsGenerator.TryEncode(rsa, jwk, header, out var message, out var error);
+    Assert.True(result);
+    Assert.NotNull(message);
+    Assert.Null(error);
+    var protectedJson = Base64UrlUtility.DecodeToString(message!.Protected);
+    Assert.Contains("jwk", protectedJson);
   }
 
-  [Fact]
-  public void GetKeyAuthorization_ReturnsExpectedFormat() {
-    var (rsa, jwk) = GenerateRsaAndJwk();
-    var token = "test-token";
-
-    var result = JwsGenerator.TryGetKeyAuthorization(jwk, token, out var keyAuth, out var errorMessage);
-    Assert.True(result, errorMessage);
-    Assert.NotNull(keyAuth);
-    Assert.StartsWith(token + ".", keyAuth);
-    Assert.True(keyAuth.Length > token.Length + 1);
+  private class FakeRsaThrows : RSA
+  {
+    public override RSAParameters ExportParameters(bool includePrivateParameters)
+      => throw new Exception("ExportParameters failed");
+    public override byte[] Decrypt(byte[] data, RSAEncryptionPadding padding) => throw new NotImplementedException();
+    public override byte[] Encrypt(byte[] data, RSAEncryptionPadding padding) => throw new NotImplementedException();
+    public override byte[] SignHash(byte[] hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) => throw new Exception("SignData failed");
+    public override bool VerifyHash(byte[] hash, byte[] signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) => throw new NotImplementedException();
+    public override void ImportParameters(RSAParameters parameters) => throw new NotImplementedException();
+    protected override void Dispose(bool disposing) { }
   }
 }

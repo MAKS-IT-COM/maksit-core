@@ -28,6 +28,7 @@
   - [Password Hasher](#password-hasher)
   - [JWT Generator](#jwt-generator)
   - [JWK Generator](#jwk-generator)
+  - [JWK Thumbprint Utility](#jwk-thumbprint-utility)
   - [JWS Generator](#jws-generator)
   - [TOTP Generator](#totp-generator)
 - [Web API Models](#web-api-models)
@@ -968,82 +969,212 @@ JwtGenerator.TryGenerateToken(secret, issuer, audience, 60, "user", roles, out v
 
 ### JWK Generator
 
-The `JwkGenerator` class provides methods for generating and managing JSON Web Keys (JWK) for cryptographic operations. It supports RSA, EC, and symmetric keys, and provides thumbprint computation and key serialization.
+The `JwkGenerator` class in the `MaksIT.Core.Security.JWK` namespace provides a utility method for generating a minimal RSA public JWK (JSON Web Key) from a given `RSA` instance.
+
+---
 
 #### Features
-- Key Generation: Generate RSA, EC, and symmetric (octet) JWKs, with or without private key material.
-- Thumbprint Computation: Compute RFC 7638-compliant thumbprints for JWKs.
-- Key Serialization: Export and import JWKs for interoperability.
-- Try Pattern: All methods use the Try-pattern for safe error handling.
+
+1. **Generate RSA Public JWK**:
+ - Extracts the RSA public exponent and modulus from an `RSA` object and encodes them as a JWK.
+
+---
 
 #### Example Usage
+
 ```csharp
-// Generate a new RSA JWK (public only)
-JwkGenerator.TryGenerateRsa(2048, false, null, null, null, out var jwk, out var error);
-// Generate a new EC JWK (private)
-JwkGenerator.TryGenerateEc(JwkCurve.P256, true, null, null, null, out var ecJwk, out var error);
-// Compute a thumbprint
-JwkGenerator.TryComputeThumbprint(jwk, out var thumbprint, out var error);
+using System.Security.Cryptography;
+using MaksIT.Core.Security.JWK;
+
+using var rsa = RSA.Create(2048);
+var result = JwkGenerator.TryGenerateFromRCA(rsa, out var jwk, out var errorMessage);
+if (result)
+{
+ // jwk contains KeyType, RsaExponent, RsaModulus
+ Console.WriteLine($"Exponent: {jwk!.RsaExponent}, Modulus: {jwk.RsaModulus}");
+}
+else
+{
+ Console.WriteLine($"Error: {errorMessage}");
+}
 ```
+
+---
+
+#### API
+
+```csharp
+public static bool TryGenerateFromRCA(
+ RSA rsa,
+ out Jwk? jwk,
+ [NotNullWhen(false)] out string? errorMessage
+)
+```
+- `rsa`: The RSA instance to extract public parameters from.
+- `jwk`: The resulting JWK object (with `KeyType`, `RsaExponent`, and `RsaModulus`).
+- `errorMessage`: Error message if generation fails.
+
+---
+
+#### Notes
+- Only supports RSA public keys.
+- The generated JWK includes only the public exponent and modulus.
+- Returns `false` and an error message if the RSA parameters are missing or invalid.
 
 ---
 
 ### JWS Generator
 
-The `JwsGenerator` class provides methods for creating and verifying JSON Web Signatures (JWS) using JWKs. It supports signing payloads with RSA keys and produces JWS objects with protected headers, payload, and signature.
-
-#### Features
-- JWS Creation: Sign string, byte[], or object payloads using RSA JWKs.
-- Try Pattern: All methods use the Try-pattern for safe error handling.
-- Key Authorization: Generate key authorization strings for ACME/Let's Encrypt flows.
-
-#### Example Usage
-```csharp
-// Sign a payload
-JwsGenerator.TryEncode(rsa, jwk, new JwsHeader(), "payload", out var jws, out var error);
-// Generate key authorization
-JwsGenerator.TryGetKeyAuthorization(jwk, "token", out var keyAuth, out var error);
-```
-
----
-
-### JWT Generator
-
-The `JwtGenerator` class provides methods for generating and validating JSON Web Tokens (JWTs).
-
-#### Features
-- Token Generation: Generate JWTs with claims and metadata.
-- Token Validation: Validate JWTs against a secret.
-
-#### Example Usage
-```csharp
-JwtGenerator.TryGenerateToken(secret, issuer, audience, 60, "user", roles, out var token, out var error);
-```
-
----
-
-### TOTP Generator
-
-The `TotpGenerator` class provides methods for generating and validating Time-Based One-Time Passwords (TOTP).
+The `JwsGenerator` class in the `MaksIT.Core.Security.JWS` namespace provides methods for creating JSON Web Signatures (JWS) using RSA keys and JWKs. It supports signing string or object payloads and produces JWS objects with protected headers, payload, and signature.
 
 ---
 
 #### Features
 
-1. **TOTP Generation**:
-   - Generate TOTPs based on shared secrets.
-
-2. **TOTP Validation**:
-   - Validate TOTPs with time tolerance.
+1. **JWS Creation**:
+ - Sign string or object payloads using an RSA key and JWK.
+ - Produces a JWS message containing the protected header, payload, and signature.
 
 ---
 
 #### Example Usage
 
-##### Generating a TOTP
 ```csharp
-TotpGenerator.TryGenerate(secret, TotpGenerator.GetCurrentTimeStepNumber(), out var totp, out var error);
+using System.Security.Cryptography;
+using MaksIT.Core.Security.JWK;
+using MaksIT.Core.Security.JWS;
+
+using var rsa = RSA.Create(2048);
+JwkGenerator.TryGenerateFromRCA(rsa, out var jwk, out var errorMessage);
+var header = new JwsHeader();
+var payload = "my-payload";
+var result = JwsGenerator.TryEncode(rsa, jwk!, header, payload, out var jwsMessage, out var error);
+if (result)
+{
+ Console.WriteLine($"Signature: {jwsMessage!.Signature}");
+}
+else
+{
+ Console.WriteLine($"Error: {error}");
+}
 ```
+
+---
+
+#### API
+
+```csharp
+public static bool TryEncode(
+ RSA rsa,
+ Jwk jwk,
+ JwsHeader protectedHeader,
+ out JwsMessage? message,
+ [NotNullWhen(false)] out string? errorMessage
+)
+```
+- Signs an empty payload.
+
+```csharp
+public static bool TryEncode<T>(
+ RSA rsa,
+ Jwk jwk,
+ JwsHeader protectedHeader,
+ T? payload,
+ out JwsMessage? message,
+ [NotNullWhen(false)] out string? errorMessage
+)
+```
+- Signs the provided payload (string or object).
+
+---
+
+#### Notes
+- Only supports signing (no verification or key authorization).
+- The protected header is automatically set to use RS256.
+- The payload is base64url encoded.
+- Returns `false` and an error message if signing fails.
+
+---
+
+### JWK Thumbprint Utility
+
+The `JwkThumbprintUtility` class in the `MaksIT.Core.Security.JWK` namespace provides methods for computing RFC7638 JWK SHA-256 thumbprints and generating key authorization strings for ACME challenges.
+
+---
+
+#### Features
+
+1. **JWK SHA-256 Thumbprint**:
+ - Computes the RFC7638-compliant SHA-256 thumbprint of a JWK (Base64Url encoded).
+2. **ACME Key Authorization**:
+ - Generates the key authorization string for ACME/Let's Encrypt HTTP challenges.
+
+---
+
+#### Example Usage
+
+##### Computing a JWK Thumbprint
+```csharp
+using System.Security.Cryptography;
+using MaksIT.Core.Security.JWK;
+
+using var rsa = RSA.Create(2048);
+JwkGenerator.TryGenerateFromRCA(rsa, out var jwk, out var errorMessage);
+var result = JwkThumbprintUtility.TryGetSha256Thumbprint(jwk!, out var thumbprint, out var error);
+if (result)
+{
+ Console.WriteLine($"Thumbprint: {thumbprint}");
+}
+else
+{
+ Console.WriteLine($"Error: {error}");
+}
+```
+
+##### Generating ACME Key Authorization
+```csharp
+var token = "acme-token";
+var result = JwkThumbprintUtility.TryGetKeyAuthorization(jwk!, token, out var keyAuth, out var error);
+if (result)
+{
+ Console.WriteLine($"Key Authorization: {keyAuth}");
+}
+else
+{
+ Console.WriteLine($"Error: {error}");
+ }
+}
+```
+
+---
+
+#### API
+
+```csharp
+public static bool TryGetSha256Thumbprint(
+ Jwk jwk,
+ out string? thumbprint,
+ [NotNullWhen(false)] out string? errorMessage
+)
+```
+- Computes the RFC7638 SHA-256 thumbprint of the JWK.
+
+```csharp
+public static bool TryGetKeyAuthorization(
+ Jwk jwk,
+ string token,
+ out string? keyAuthorization,
+ [NotNullWhen(false)] out string? errorMessage
+)
+```
+- Generates the ACME key authorization string: `{token}.{thumbprint}`.
+
+---
+
+#### Notes
+- Only supports RSA JWKs (requires exponent and modulus).
+- Returns `false` and an error message if required JWK fields are missing or invalid.
+- Thumbprint is Base64Url encoded and suitable for ACME/Let's Encrypt HTTP challenges.
 
 ---
 
