@@ -8,23 +8,24 @@ using MaksIT.Core.Extensions;
 namespace MaksIT.Core.Security.JWS;
 
 public static class JwsGenerator {
-  public static bool TryEncode(
+  public static bool TryEncode<THeader>(
     RSA rsa,
     Jwk jwk,
-    JwsHeader protectedHeader,
+    THeader protectedHeader,
     [NotNullWhen(true)] out JwsMessage? message,
     [NotNullWhen(false)] out string? errorMessage
-  ) => TryEncode<string>(rsa, jwk, protectedHeader, null, out message, out errorMessage);
+  ) where THeader : JwsHeader => 
+    TryEncode<THeader, string>(rsa, jwk, protectedHeader, null, out message, out errorMessage);
 
 
-  public static bool TryEncode<T>(
+  public static bool TryEncode<THeader, TPayload>(
     RSA rsa,
     Jwk jwk,
-    JwsHeader protectedHeader,
-    T? payload,
+    THeader protectedHeader,
+    TPayload? payload,
     [NotNullWhen(true)] out JwsMessage? message,
     [NotNullWhen(false)] out string? errorMessage
-  ) {
+  ) where THeader : JwsHeader {
     try {
       protectedHeader.Algorithm = JwkAlgorithm.Rs256.Name;
 

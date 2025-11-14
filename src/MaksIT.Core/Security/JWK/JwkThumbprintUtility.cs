@@ -37,19 +37,26 @@ public static class JwkThumbprintUtility {
   ) {
     thumbprint = null;
     errorMessage = null;
+
     try {
       if (jwk.RsaExponent == null || jwk.RsaModulus == null)
         throw new ArgumentException("RSA exponent or modulus is null.");
+
       var thumbprintObj = new OrderedJwk {
         E = jwk.RsaExponent,
         Kty = JwkKeyType.Rsa.Name,
         N = jwk.RsaModulus
       };
+
       var json = thumbprintObj.ToJson();
+
       thumbprint = Base64UrlUtility.Encode(SHA256.HashData(Encoding.UTF8.GetBytes(json)));
+
       return true;
-    } catch (Exception ex) {
+    }
+    catch (Exception ex) {
       errorMessage = ex.Message;
+
       return false;
     }
   }

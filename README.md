@@ -1034,6 +1034,9 @@ The `JwsGenerator` class in the `MaksIT.Core.Security.JWS` namespace provides me
 1. **JWS Creation**:
  - Sign string or object payloads using an RSA key and JWK.
  - Produces a JWS message containing the protected header, payload, and signature.
+ - Supports generic protected header and payload types.
+ - Automatically sets the `Algorithm` property to `RS256` in the protected header.
+ - Sets either the `KeyId` or the full `Jwk` in the protected header, depending on the presence of `KeyId`.
 
 ---
 
@@ -1045,7 +1048,7 @@ using MaksIT.Core.Security.JWK;
 using MaksIT.Core.Security.JWS;
 
 using var rsa = RSA.Create(2048);
-JwkGenerator.TryGenerateFromRCA(rsa, out var jwk, out var errorMessage);
+JwkGenerator.TryGenerateFromRSA(rsa, out var jwk, out var errorMessage);
 var header = new JwsHeader();
 var payload = "my-payload";
 var result = JwsGenerator.TryEncode(rsa, jwk!, header, payload, out var jwsMessage, out var error);
@@ -1064,34 +1067,35 @@ else
 #### API
 
 ```csharp
-public static bool TryEncode(
+public static bool TryEncode<THeader>(
  RSA rsa,
  Jwk jwk,
- JwsHeader protectedHeader,
- [NotNullWhen(true)]out JwsMessage? message,
- [NotNullWhen(false)] out string? errorMessage
-)
-```
-- Signs an empty payload.
-
-```csharp
-public static bool TryEncode<T>(
- RSA rsa,
- Jwk jwk,
- JwsHeader protectedHeader,
- T? payload,
+ THeader protectedHeader,
  [NotNullWhen(true)] out JwsMessage? message,
  [NotNullWhen(false)] out string? errorMessage
-)
+) where THeader : JwsHeader
 ```
-- Signs the provided payload (string or object).
+- Signs an empty payload with a generic protected header.
+
+```csharp
+public static bool TryEncode<THeader, TPayload>(
+ RSA rsa,
+ Jwk jwk,
+ THeader protectedHeader,
+ TPayload? payload,
+ [NotNullWhen(true)] out JwsMessage? message,
+ [NotNullWhen(false)] out string? errorMessage
+) where THeader : JwsHeader
+```
+- Signs the provided payload (string or object) with a generic protected header.
 
 ---
 
 #### Notes
 - Only supports signing (no verification or key authorization).
 - The protected header is automatically set to use RS256.
-- The payload is base64url encoded.
+- If the JWK has a `KeyId`, it is set in the header; otherwise, the full JWK is included.
+- The payload is base64url encoded (as a string or JSON).
 - Returns `false` and an error message if signing fails.
 
 ---
