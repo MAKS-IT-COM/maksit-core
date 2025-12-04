@@ -6,7 +6,7 @@ namespace MaksIT.Core.Logging;
 public class JsonFileLogger : BaseFileLogger {
   public JsonFileLogger(string folderPath, TimeSpan retentionPeriod) : base(folderPath, retentionPeriod) { }
 
-  public override void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) {
+  public override async Task Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter) {
     if (!IsEnabled(logLevel))
       return;
 
@@ -18,6 +18,6 @@ public class JsonFileLogger : BaseFileLogger {
     };
 
     var logFileName = GenerateLogFileName("json");
-    AppendToLogFile(logFileName, JsonSerializer.Serialize(logEntry) + Environment.NewLine);
+    await AppendToLogFileAsync(logFileName, JsonSerializer.Serialize(logEntry) + Environment.NewLine);
   }
 }
