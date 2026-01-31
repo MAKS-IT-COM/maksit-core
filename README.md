@@ -1,4 +1,4 @@
-﻿# MaksIT.Core Library Documentation
+# MaksIT.Core Library Documentation
 
 ## Table of Contents
 
@@ -16,6 +16,7 @@
 - [Logging](#logging)
   - [File Logger](#file-logger)
   - [JSON File Logger](#json-file-logger)
+  - [Logger Prefix](#logger-prefix)
 - [Threading](#threading)
   - [Lock Manager](#lock-manager)
 - [Networking](#networking)
@@ -31,7 +32,10 @@
   - [JWK Thumbprint Utility](#jwk-thumbprint-utility)
   - [JWS Generator](#jws-generator)
   - [TOTP Generator](#totp-generator)
-- [Web API Models](#web-api-models)
+- [Web API](#web-api)
+  - [Paged Request](#paged-request)
+  - [Paged Response](#paged-response)
+  - [Patch Operation](#patch-operation)
 - [Sagas](#sagas)
 - [CombGuidGenerator](#combguidgenerator)
 - [Others](#others)
@@ -664,6 +668,9 @@ The `FileLogger` class in the `MaksIT.Core.Logging` namespace provides a simple 
 3. **Thread Safety**:
    - Ensures safe concurrent writes to the log file using the `LockManager`.
 
+4. **Folder-Based Logging**:
+   - Organize logs into subfolders using the `LoggerPrefix` feature.
+
 #### Example Usage
 
 ```csharp
@@ -691,6 +698,9 @@ The `JsonFileLogger` class in the `MaksIT.Core.Logging` namespace provides struc
 3. **Thread Safety**:
    - Ensures safe concurrent writes to the log file using the `LockManager`.
 
+4. **Folder-Based Logging**:
+   - Organize logs into subfolders using the `LoggerPrefix` feature.
+
 #### Example Usage
 
 ```csharp
@@ -700,6 +710,92 @@ services.AddLogging(builder => builder.AddJsonFileLogger("logs", TimeSpan.FromDa
 var logger = services.BuildServiceProvider().GetRequiredService<ILogger<JsonFileLogger>>();
 logger.LogInformation("Logging to JSON file!");
 ```
+
+---
+
+### Logger Prefix
+
+The `LoggerPrefix` class in the `MaksIT.Core.Logging` namespace provides a type-safe way to specify logger categories with special prefixes. It extends the `Enumeration` base class and enables organizing logs into subfolders or applying custom categorization without using magic strings.
+
+#### Features
+
+1. **Type-Safe Prefixes**:
+   - Avoid magic strings by using strongly-typed prefix constants.
+
+2. **Folder-Based Organization**:
+   - Use `LoggerPrefix.Folder` to write logs to specific subfolders.
+
+3. **Extensible Categories**:
+   - Additional prefixes like `LoggerPrefix.Category` and `LoggerPrefix.Tag` are available for future use.
+
+4. **Automatic Parsing**:
+   - Parse category names to extract prefix and value using `LoggerPrefix.Parse()`.
+
+5. **Backward Compatible**:
+   - Standard `ILogger<T>` usage remains unchanged; prefixes are only applied when explicitly used.
+
+#### Available Prefixes
+
+| Prefix | Purpose |
+|--------|---------|
+| `LoggerPrefix.Folder` | Writes logs to a subfolder with the specified name |
+| `LoggerPrefix.Category` | Reserved for categorization (future use) |
+| `LoggerPrefix.Tag` | Reserved for tagging (future use) |
+
+#### Example Usage
+
+##### Creating a Logger with a Folder Prefix
+```csharp
+var services = new ServiceCollection();
+services.AddLogging(builder => builder.AddFileLogger("logs", TimeSpan.FromDays(7)));
+
+var provider = services.BuildServiceProvider();
+var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
+
+// Create a logger that writes to logs/Audit/log_yyyy-MM-dd.txt
+var auditLogger = loggerFactory.CreateLogger(LoggerPrefix.Folder.WithValue("Audit"));
+auditLogger.LogInformation("Audit event occurred");
+
+// Create a logger that writes to logs/Orders/log_yyyy-MM-dd.txt
+var ordersLogger = loggerFactory.CreateLogger(LoggerPrefix.Folder.WithValue("Orders"));
+ordersLogger.LogInformation("Order processed");
+```
+
+##### Standard ILogger<T> Usage (Unchanged)
+```csharp
+// Standard usage - logs go to the default folder (logs/log_yyyy-MM-dd.txt)
+var logger = provider.GetRequiredService<ILogger<MyService>>();
+logger.LogInformation("Standard log message");
+```
+
+##### Parsing a Category Name
+```csharp
+var categoryName = "Folder:Audit";
+var (prefix, value) = LoggerPrefix.Parse(categoryName);
+
+if (prefix == LoggerPrefix.Folder) {
+    Console.WriteLine($"Folder: {value}"); // Output: Folder: Audit
+}
+```
+
+#### Result
+
+| Logger Creation | Log File Location |
+|-----------------|-------------------|
+| `ILogger<MyService>` | `logs/log_2026-01-30.txt` |
+| `CreateLogger(LoggerPrefix.Folder.WithValue("Audit"))` | `logs/Audit/log_2026-01-30.txt` |
+| `CreateLogger(LoggerPrefix.Folder.WithValue("Orders"))` | `logs/Orders/log_2026-01-30.txt` |
+
+#### Best Practices
+
+1. **Use Type-Safe Prefixes**:
+   - Always use `LoggerPrefix.Folder.WithValue()` instead of raw strings like `"Folder:Audit"`.
+
+2. **Organize by Domain**:
+   - Use meaningful folder names to organize logs by domain (e.g., "Audit", "Orders", "Security").
+
+3. **Keep Default Logging Simple**:
+   - Use standard `ILogger<T>` for general application logging and folder prefixes for specialized logs.
 
 ---
 
@@ -1123,7 +1219,7 @@ using System.Security.Cryptography;
 using MaksIT.Core.Security.JWK;
 
 using var rsa = RSA.Create(2048);
-JwkGenerator.TryGenerateFromRCA(rsa, out var jwk, out var errorMessage);
+JwkGenerator.TryGenerateFromRSA(rsa, out var jwk, out var errorMessage);
 var result = JwkThumbprintUtility.TryGetSha256Thumbprint(jwk!, out var thumbprint, out var error);
 if (result)
 {
@@ -1146,7 +1242,6 @@ if (result)
 else
 {
  Console.WriteLine($"Error: {error}");
- }
 }
 ```
 
@@ -1179,6 +1274,199 @@ public static bool TryGetKeyAuthorization(
 - Only supports RSA JWKs (requires exponent and modulus).
 - Returns `false` and an error message if required JWK fields are missing or invalid.
 - Thumbprint is Base64Url encoded and suitable for ACME/Let's Encrypt HTTP challenges.
+
+---
+
+### TOTP Generator
+
+The `TotpGenerator` class in the `MaksIT.Core.Security` namespace provides methods for generating and validating Time-based One-Time Passwords (TOTP) for two-factor authentication.
+
+---
+
+#### Features
+
+1. **TOTP Validation**:
+   - Validate TOTP codes against a shared secret with configurable time tolerance.
+
+2. **TOTP Generation**:
+   - Generate TOTP codes from a Base32-encoded secret.
+
+3. **Secret Generation**:
+   - Generate cryptographically secure Base32 secrets for TOTP setup.
+
+4. **Recovery Codes**:
+   - Generate backup recovery codes for account recovery.
+
+5. **Auth Link Generation**:
+   - Generate `otpauth://` URIs for QR code scanning in authenticator apps.
+
+---
+
+#### Example Usage
+
+##### Generating a Secret
+```csharp
+TotpGenerator.TryGenerateSecret(out var secret, out var error);
+// secret is a Base32-encoded string for use with authenticator apps
+```
+
+##### Validating a TOTP Code
+```csharp
+var timeTolerance = 1; // Allow 1 time step before/after current
+TotpGenerator.TryValidate(totpCode, secret, timeTolerance, out var isValid, out var error);
+if (isValid) {
+    Console.WriteLine("TOTP is valid");
+}
+```
+
+##### Generating Recovery Codes
+```csharp
+TotpGenerator.TryGenerateRecoveryCodes(10, out var recoveryCodes, out var error);
+// recoveryCodes contains 10 codes in format "XXXX-XXXX"
+```
+
+##### Generating an Auth Link for QR Code
+```csharp
+TotpGenerator.TryGenerateTotpAuthLink(
+    "MyApp",
+    "user@example.com",
+    secret,
+    "MyApp",
+    null, // algorithm (default SHA1)
+    null, // digits (default 6)
+    null, // period (default 30)
+    out var authLink,
+    out var error
+);
+// authLink = "otpauth://totp/MyApp:user@example.com?secret=...&issuer=MyApp"
+```
+
+---
+
+## Web API
+
+The `Webapi` namespace provides models and utilities for building Web APIs, including pagination support and patch operations.
+
+---
+
+### Paged Request
+
+The `PagedRequest` class in the `MaksIT.Core.Webapi.Models` namespace provides a base class for paginated API requests with filtering and sorting capabilities.
+
+#### Features
+
+1. **Pagination**:
+   - Configure page size and page number for paginated results.
+
+2. **Dynamic Filtering**:
+   - Build filter expressions from string-based filter queries.
+
+3. **Dynamic Sorting**:
+   - Build sort expressions with ascending/descending order.
+
+#### Properties
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `PageSize` | `int` | `100` | Number of items per page |
+| `PageNumber` | `int` | `1` | Current page number |
+| `Filters` | `string?` | `null` | Filter expression string |
+| `SortBy` | `string?` | `null` | Property name to sort by |
+| `IsAscending` | `bool` | `true` | Sort direction |
+
+#### Example Usage
+
+```csharp
+var request = new PagedRequest {
+    PageSize = 20,
+    PageNumber = 1,
+    Filters = "Name.Contains(\"John\") && Age > 18",
+    SortBy = "Name",
+    IsAscending = true
+};
+
+var filterExpression = request.BuildFilterExpression<User>();
+var sortExpression = request.BuildSortExpression<User>();
+
+var results = dbContext.Users
+    .Where(filterExpression)
+    .OrderBy(sortExpression)
+    .Skip((request.PageNumber - 1) * request.PageSize)
+    .Take(request.PageSize)
+    .ToList();
+```
+
+---
+
+### Paged Response
+
+The `PagedResponse<T>` class in the `MaksIT.Core.Webapi.Models` namespace provides a generic wrapper for paginated API responses.
+
+#### Properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `Items` | `IEnumerable<T>` | The items for the current page |
+| `PageNumber` | `int` | Current page number |
+| `PageSize` | `int` | Number of items per page |
+| `TotalCount` | `int` | Total number of items across all pages |
+| `TotalPages` | `int` | Calculated total number of pages |
+| `HasPreviousPage` | `bool` | Whether a previous page exists |
+| `HasNextPage` | `bool` | Whether a next page exists |
+
+#### Example Usage
+
+```csharp
+var items = await dbContext.Users
+    .Skip((pageNumber - 1) * pageSize)
+    .Take(pageSize)
+    .ToListAsync();
+
+var totalCount = await dbContext.Users.CountAsync();
+
+var response = new PagedResponse<UserDto>(items, totalCount, pageNumber, pageSize);
+
+// response.TotalPages, response.HasNextPage, etc. are automatically calculated
+```
+
+---
+
+### Patch Operation
+
+The `PatchOperation` enum in the `MaksIT.Core.Webapi.Models` namespace defines operations for partial updates (PATCH requests).
+
+#### Values
+
+| Value | Description |
+|-------|-------------|
+| `SetField` | Set or replace a normal field value |
+| `RemoveField` | Set a field to null |
+| `AddToCollection` | Add an item to a collection property |
+| `RemoveFromCollection` | Remove an item from a collection property |
+
+#### Example Usage
+
+```csharp
+public class UserPatchRequest : PatchRequestModelBase {
+    public PatchOperation Operation { get; set; }
+    public string PropertyName { get; set; }
+    public object? Value { get; set; }
+}
+
+// Example: Set a field
+var patch = new UserPatchRequest {
+    Operation = PatchOperation.SetField,
+    PropertyName = "Name",
+    Value = "New Name"
+};
+
+// Example: Add to collection
+var patch = new UserPatchRequest {
+    Operation = PatchOperation.AddToCollection,
+    PropertyName = "Roles",
+    Value = "Admin"
+};
+```
 
 ---
 

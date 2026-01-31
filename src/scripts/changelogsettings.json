@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "Configuration for Generate-Changelog.ps1 (AI-assisted changelog generation)",
+
+  "ollama": {
+    "enabled": true,
+    "apiUrl": "http://localhost:11434",
+    "defaultTimeout": 0,
+    "defaultContextWindow": 0
+  },
+
+  "changelog": {
+    "debug": true,
+    "enableRAG": true,
+    "similarityThreshold": 0.65,
+    
+    "csprojPath": "../MaksIT.Core/MaksIT.Core.csproj",
+    "outputFile": "../../CHANGELOG.md",
+    "licensePath": "../../LICENSE.md",
+    "fileExtension": ".cs",
+    "excludePatterns": ["Tests:", "Tests.cs", ".Tests."],
+
+    "models": {
+      "analyze": {
+        "name": "qwen2.5-coder:7b-instruct-q6_K",
+        "context": 0,
+        "maxTokens": 0,
+        "description": "Pass 1: Code commit analysis (7B, fast)"
+      },
+      "reason": {
+        "name": "qwen2.5:7b-instruct-q8_0",
+        "context": 0,
+        "maxTokens": 0,
+        "temperature": 0.1,
+        "description": "Pass 2: Consolidation (7B, fast)"
+      },
+      "write": {
+        "name": "qwen2.5:7b-instruct-q8_0",
+        "context": 0,
+        "maxTokens": 0,
+        "description": "Pass 3: Formatting (7B, fast)"
+      },
+      "embed": {
+        "name": "mxbai-embed-large",
+        "description": "RAG: Commit clustering"
+      }
+    },
+
+    "prompts": {
+      "analyze": [
+        "Convert code changes to changelog entries. Include ALL items.",
+        "",
+        "Changes:",
+        "{{changes}}",
+        "",
+        "RULES:",
+        "1. Create ONE bullet point per item",
+        "2. Include method names mentioned (CreateMutex, ResolveFolderPath, etc.)",
+        "3. New classes = \"Added [class] for [purpose]\"",
+        "4. New methods = \"Added [method] to [class]\"",
+        "5. Deleted files = \"Removed [class/feature]\"",
+        "6. Exception handling = \"Improved error handling in [class]\"",
+        "",
+        "Output bullet points for each change:"
+      ],
+      
+      "reason": [
+        "Keep all important details from this changelog.",
+        "",
+        "Input:",
+        "{{input}}",
+        "",
+        "RULES:",
+        "1. KEEP specific method names and class names",
+        "2. KEEP all distinct features - do not over-consolidate",
+        "3. Merge ONLY if items are nearly identical",
+        "4. DO NOT invent new information",
+        "5. Output 3-10 bullet points",
+        "",
+        "Output:"
+      ],
+      
+      "format": [
+        "Categorize these items under the correct changelog headers.",
+        "",
+        "Items:",
+        "{{items}}",
+        "",
+        "HEADERS (use exactly as shown):",
+        "### Added",
+        "### Changed",
+        "### Fixed",
+        "### Removed",
+        "",
+        "CATEGORIZATION RULES:",
+        "- \"Added [class/method]\" -> ### Added",
+        "- \"Improved...\" or \"Enhanced...\" -> ### Changed",
+        "- \"Fixed...\" -> ### Fixed",
+        "- \"Removed...\" -> ### Removed",
+        "",
+        "Output each item under correct header. Omit empty sections:"
+      ]
+    }
+  }
+}

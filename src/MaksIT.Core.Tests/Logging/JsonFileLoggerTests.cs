@@ -140,4 +140,61 @@ public class JsonFileLoggerTests {
     var logContent = File.ReadAllText(logFile);
     Assert.Contains("Test combined logging", logContent);
   }
+
+  [Fact]
+  public void ShouldWriteLogsToSubfolderWhenFolderPrefixUsed() {
+    // Arrange
+    var serviceCollection = new ServiceCollection();
+    serviceCollection.AddSingleton<IHostEnvironment>(sp =>
+        new TestHostEnvironment {
+            EnvironmentName = Environments.Development,
+            ApplicationName = "TestApp",
+            ContentRootPath = Directory.GetCurrentDirectory()
+        });
+
+    serviceCollection.AddLogging(builder => builder.AddJsonFileLogger(_testFolderPath, TimeSpan.FromDays(7)));
+
+    var provider = serviceCollection.BuildServiceProvider();
+    var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
+
+    // Act - Create logger with Folder prefix
+    var logger = loggerFactory.CreateLogger(LoggerPrefix.Folder.WithValue("Audit"));
+    logger.LogInformation("Audit JSON log message");
+
+    // Assert
+    var auditFolder = Path.Combine(_testFolderPath, "Audit");
+    Assert.True(Directory.Exists(auditFolder), "Audit subfolder should be created");
+
+    var logFile = Directory.GetFiles(auditFolder, "log_*.json").FirstOrDefault();
+    Assert.NotNull(logFile);
+    var logContent = File.ReadAllText(logFile);
+    Assert.Contains("Audit JSON log message", logContent);
+  }
+
+  [Fact]
+  public void ShouldWriteLogsToDefaultFolderWhenNoPrefixUsed() {
+    // Arrange
+    var serviceCollection = new ServiceCollection();
+    serviceCollection.AddSingleton<IHostEnvironment>(sp =>
+        new TestHostEnvironment {
+            EnvironmentName = Environments.Development,
+            ApplicationName = "TestApp",
+            ContentRootPath = Directory.GetCurrentDirectory()
+        });
+
+    serviceCollection.AddLogging(builder => builder.AddJsonFileLogger(_testFolderPath, TimeSpan.FromDays(7)));
+
+    var provider = serviceCollection.BuildServiceProvider();
+    var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
+
+    // Act - Create logger with full type name (simulating ILogger<T>)
+    var logger = loggerFactory.CreateLogger("MyApp.Services.OrderService");
+    logger.LogInformation("Order service JSON log message");
+
+    // Assert - Should NOT create subfolder for type names
+    var logFile = Directory.GetFiles(_testFolderPath, "log_*.json").FirstOrDefault();
+    Assert.NotNull(logFile);
+    var logContent = File.ReadAllText(logFile);
+    Assert.Contains("Order service JSON log message", logContent);
+  }
 }

@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$comment": "Configuration for Release-NuGetPackage.ps1. Secrets are stored in environment variables, not here.",
+
+  "release": {
+    "branch": "main",
+    "$comment": "Tag must be on this branch to release. Set to empty string to allow any branch."
+  },
+
+  "paths": {
+    "changelogPath": "../../CHANGELOG.md"
+  },
+
+  "gitHub": {
+    "enabled": true,
+    "repository": "MAKS-IT-COM/maksit-core",
+    "$comment": "Explicit GitHub repository (owner/repo). If empty, auto-detects from git remote."
+  },
+
+  "environmentVariables": {
+    "$comment": "Required environment variables (store secrets here, not in this file)",
+    "nugetApiKey": "NUGET_MAKS_IT",
+    "githubToken": "GITHUB_MAKS_IT_COM",
+    "signingCertPassword": "SIGNING_CERT_PASSWORD",
+    "smtpPassword": "SMTP_PASSWORD"
+  },
+
+  "qualityGates": {
+    "coverageThreshold": 0,
+    "failOnVulnerabilities": true
+  },
+
+  "packageSigning": {
+    "enabled": false,
+    "certificatePath": "",
+    "timestampServer": "http://timestamp.digicert.com"
+  },
+
+  "emailNotification": {
+    "enabled": false,
+    "smtpServer": "",
+    "smtpPort": 587,
+    "useSsl": true,
+    "from": "",
+    "to": ""
+  }
+}

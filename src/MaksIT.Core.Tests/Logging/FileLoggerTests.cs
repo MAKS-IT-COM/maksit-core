@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using MaksIT.Core.Logging;
@@ -102,5 +102,119 @@ public class FileLoggerTests {
     } catch {
       Assert.Fail("Logger should handle exceptions gracefully.");
     }
+  }
+
+  [Fact]
+  public void ShouldWriteLogsToSubfolderWhenFolderPrefixUsed() {
+    // Arrange
+    var serviceCollection = new ServiceCollection();
+    serviceCollection.AddSingleton<IHostEnvironment>(sp =>
+        new TestHostEnvironment {
+            EnvironmentName = Environments.Development,
+            ApplicationName = "TestApp",
+            ContentRootPath = Directory.GetCurrentDirectory()
+        });
+
+    serviceCollection.AddLogging(builder => builder.AddFileLogger(_testFolderPath, TimeSpan.FromDays(7)));
+
+    var provider = serviceCollection.BuildServiceProvider();
+    var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
+
+    // Act - Create logger with Folder prefix
+    var logger = loggerFactory.CreateLogger(LoggerPrefix.Folder.WithValue("Audit"));
+    logger.LogInformation("Audit log message");
+
+    // Assert
+    var auditFolder = Path.Combine(_testFolderPath, "Audit");
+    Assert.True(Directory.Exists(auditFolder), "Audit subfolder should be created");
+
+    var logFile = Directory.GetFiles(auditFolder, "log_*.txt").FirstOrDefault();
+    Assert.NotNull(logFile);
+    var logContent = File.ReadAllText(logFile);
+    Assert.Contains("Audit log message", logContent);
+  }
+
+  [Fact]
+  public void ShouldWriteLogsToDefaultFolderWhenNoPrefixUsed() {
+    // Arrange
+    var serviceCollection = new ServiceCollection();
+    serviceCollection.AddSingleton<IHostEnvironment>(sp =>
+        new TestHostEnvironment {
+            EnvironmentName = Environments.Development,
+            ApplicationName = "TestApp",
+            ContentRootPath = Directory.GetCurrentDirectory()
+        });
+
+    serviceCollection.AddLogging(builder => builder.AddFileLogger(_testFolderPath, TimeSpan.FromDays(7)));
+
+    var provider = serviceCollection.BuildServiceProvider();
+    var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
+
+    // Act - Create logger with full type name (simulating ILogger<T>)
+    var logger = loggerFactory.CreateLogger("MyApp.Services.OrderService");
+    logger.LogInformation("Order service log message");
+
+    // Assert - Should NOT create subfolder for type names
+    var logFile = Directory.GetFiles(_testFolderPath, "log_*.txt").FirstOrDefault();
+    Assert.NotNull(logFile);
+    var logContent = File.ReadAllText(logFile);
+    Assert.Contains("Order service log message", logContent);
+  }
+
+  [Fact]
+  public void ShouldHandleFolderPrefixWithSpaces() {
+    // Arrange
+    var serviceCollection = new ServiceCollection();
+    serviceCollection.AddSingleton<IHostEnvironment>(sp =>
+        new TestHostEnvironment {
+            EnvironmentName = Environments.Development,
+            ApplicationName = "TestApp",
+            ContentRootPath = Directory.GetCurrentDirectory()
+        });
+
+    serviceCollection.AddLogging(builder => builder.AddFileLogger(_testFolderPath, TimeSpan.FromDays(7)));
+
+    var provider = serviceCollection.BuildServiceProvider();
+    var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
+
+    // Act
+    var logger = loggerFactory.CreateLogger(LoggerPrefix.Folder.WithValue("My Custom Logs"));
+    logger.LogInformation("Custom folder log message");
+
+    // Assert
+    var customFolder = Path.Combine(_testFolderPath, "My Custom Logs");
+    Assert.True(Directory.Exists(customFolder), "Custom subfolder with spaces should be created");
+
+    var logFile = Directory.GetFiles(customFolder, "log_*.txt").FirstOrDefault();
+    Assert.NotNull(logFile);
+    var logContent = File.ReadAllText(logFile);
+    Assert.Contains("Custom folder log message", logContent);
+  }
+
+  [Fact]
+  public void ShouldIgnoreEmptyFolderPrefix() {
+    // Arrange
+    var serviceCollection = new ServiceCollection();
+    serviceCollection.AddSingleton<IHostEnvironment>(sp =>
+        new TestHostEnvironment {
+            EnvironmentName = Environments.Development,
+            ApplicationName = "TestApp",
+            ContentRootPath = Directory.GetCurrentDirectory()
+        });
+
+    serviceCollection.AddLogging(builder => builder.AddFileLogger(_testFolderPath, TimeSpan.FromDays(7)));
+
+    var provider = serviceCollection.BuildServiceProvider();
+    var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
+
+    // Act - Create logger with empty folder value
+    var logger = loggerFactory.CreateLogger(LoggerPrefix.Folder.WithValue(""));
+    logger.LogInformation("Empty folder prefix log message");
+
+    // Assert - Should use default folder (not create empty subfolder)
+    var logFile = Directory.GetFiles(_testFolderPath, "log_*.txt").FirstOrDefault();
+    Assert.NotNull(logFile);
+    var logContent = File.ReadAllText(logFile);
+    Assert.Contains("Empty folder prefix log message", logContent);
   }
 }

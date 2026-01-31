@@ -13,7 +13,23 @@ public class JsonFileLoggerProvider : ILoggerProvider {
   }
 
   public ILogger CreateLogger(string categoryName) {
-    return new JsonFileLogger(_folderPath, _retentionPeriod);
+    var folderPath = ResolveFolderPath(categoryName);
+    return new JsonFileLogger(folderPath, _retentionPeriod);
+  }
+
+  private string ResolveFolderPath(string categoryName) {
+    var (prefix, value) = LoggerPrefix.Parse(categoryName);
+
+    if (prefix == LoggerPrefix.Folder && !string.IsNullOrWhiteSpace(value)) {
+      return Path.Combine(_folderPath, SanitizeForPath(value));
+    }
+
+    return _folderPath;
+  }
+
+  private static string SanitizeForPath(string input) {
+    var invalid = Path.GetInvalidPathChars();
+    return string.Concat(input.Where(c => !invalid.Contains(c)));
   }
 
   public void Dispose() { }

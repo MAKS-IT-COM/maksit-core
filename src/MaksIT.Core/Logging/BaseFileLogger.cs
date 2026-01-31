@@ -8,7 +8,17 @@ public abstract class BaseFileLogger : ILogger, IDisposable {
   private readonly LockManager _lockManager = new LockManager();
   private readonly string _folderPath;
   private readonly TimeSpan _retentionPeriod;
-  private static readonly Mutex _fileMutex = new Mutex(false, "Global\\MaksITLoggerFileMutex"); // Named mutex for cross-process locking
+  private static readonly Mutex _fileMutex = CreateMutex();
+
+  private static Mutex CreateMutex() {
+    try {
+      // Try Global\ first for cross-session synchronization (services, multiple users)
+      return new Mutex(false, "Global\\MaksITLoggerFileMutex");
+    } catch (UnauthorizedAccessException) {
+      // Fall back to Local\ if Global\ is not allowed (sandboxed/restricted environment)
+      return new Mutex(false, "Local\\MaksITLoggerFileMutex");
+    }
+  }
 
   protected BaseFileLogger(string folderPath, TimeSpan retentionPeriod) {
     _folderPath = folderPath;

@@ -1,28 +1,54 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
 
+    <!-- Enable XML documentation -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+
     <!-- NuGet package metadata -->
     <PackageId>MaksIT.Core</PackageId>
-    <Version>1.6.0</Version>
+    <Version>1.6.1</Version>
     <Authors>Maksym Sadovnychyy</Authors>
     <Company>MAKS-IT</Company>
     <Product>MaksIT.Core</Product>
-    <Description>MaksIT.Core is a collection of helper methods and extensions for .NET projects, designed to simplify common tasks and improve code readability. The library includes extensions for `Guid`, `string`, `Object`, and a base class for creating enumeration types.</Description>
-    <PackageTags>dotnet;enumeration;string;guid;object;parsers;extensions;jwt;aes;crc32;</PackageTags>
+    <Copyright>Copyright © Maksym Sadovnychyy (MAKS-IT)</Copyright>
+    <Description>A comprehensive .NET library providing utilities for logging (file/JSON with folder organization), security (JWT, JWK, JWS, TOTP, AES-GCM, password hashing), extensions (string, object, LINQ expressions, DateTime), saga orchestration, COMB GUIDs, Web API pagination, and more.</Description>
+    <PackageTags>dotnet;extensions;logging;file-logger;jwt;jwk;jws;totp;2fa;aes-gcm;password-hasher;saga;comb-guid;pagination;crc32;base32;enumeration</PackageTags>
+
+    <PackageProjectUrl>https://github.com/MAKS-IT-COM/maksit-core</PackageProjectUrl>
     <RepositoryUrl>https://github.com/MAKS-IT-COM/maksit-core</RepositoryUrl>
-    <RequireLicenseAcceptance>false</RequireLicenseAcceptance>
+    <RepositoryType>git</RepositoryType>
+
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+    <PackageReleaseNotes>See https://github.com/MAKS-IT-COM/maksit-core/releases</PackageReleaseNotes>
+
+    <RequireLicenseAcceptance>false</RequireLicenseAcceptance>
+
+    <!-- Source Link for debugging -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+
+    <!-- Deterministic builds for reproducibility -->
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
   </PropertyGroup>
 
   <ItemGroup>
     <None Include="../../README.md" Pack="true" PackagePath="" />
     <None Include="../../LICENSE.md" Pack="true" PackagePath="" />
+  </ItemGroup>
+
+  <!-- Source Link package -->
+  <ItemGroup>
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
@@ -37,4 +63,5 @@
     <PackageReference Include="System.Linq.Dynamic.Core" Version="1.6.9" />
     <PackageReference Include="System.Threading.RateLimiting" Version="9.0.10" />
   </ItemGroup>
+
 </Project>
