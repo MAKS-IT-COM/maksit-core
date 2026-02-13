@@ -217,4 +217,42 @@ public class FileLoggerTests {
     var logContent = File.ReadAllText(logFile);
     Assert.Contains("Empty folder prefix log message", logContent);
   }
+
+  [Fact]
+  public void ShouldRecreateLogFolderIfDeleted() {
+    // Arrange
+    var serviceCollection = new ServiceCollection();
+    serviceCollection.AddSingleton<IHostEnvironment>(sp =>
+        new TestHostEnvironment {
+          EnvironmentName = Environments.Development,
+          ApplicationName = "TestApp",
+          ContentRootPath = Directory.GetCurrentDirectory()
+        });
+
+    serviceCollection.AddLogging(builder => builder.AddFileLogger(_testFolderPath, TimeSpan.FromDays(7)));
+
+    var provider = serviceCollection.BuildServiceProvider();
+    var loggerFactory = provider.GetRequiredService<ILoggerFactory>();
+
+    // Act - Create logger and write a log (folder is created)
+    var logger = loggerFactory.CreateLogger(LoggerPrefix.Folder.WithValue("Audit"));
+    logger.LogInformation("First log message");
+
+    var auditFolder = Path.Combine(_testFolderPath, "Audit");
+    Assert.True(Directory.Exists(auditFolder), "Audit subfolder should be created");
+
+    // Delete the folder
+    Directory.Delete(auditFolder, true);
+    Assert.False(Directory.Exists(auditFolder), "Audit subfolder should be deleted");
+
+    // Write another log, which should trigger folder recreation
+    logger.LogInformation("Second log message after folder deletion");
+
+    // Assert
+    Assert.True(Directory.Exists(auditFolder), "Audit subfolder should be recreated");
+    var logFile = Directory.GetFiles(auditFolder, "log_*.txt").FirstOrDefault();
+    Assert.NotNull(logFile);
+    var logContent = File.ReadAllText(logFile);
+    Assert.Contains("Second log message after folder deletion", logContent);
+  }
 }

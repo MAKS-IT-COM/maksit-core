@@ -20,11 +20,13 @@ public class JsonFileLoggerProvider : ILoggerProvider {
   private string ResolveFolderPath(string categoryName) {
     var (prefix, value) = LoggerPrefix.Parse(categoryName);
 
+    var newFolderPath = _folderPath;
+
     if (prefix == LoggerPrefix.Folder && !string.IsNullOrWhiteSpace(value)) {
-      return Path.Combine(_folderPath, SanitizeForPath(value));
+      newFolderPath = Path.Combine(newFolderPath, SanitizeForPath(value));
     }
 
-    return _folderPath;
+    return newFolderPath;
   }
 
   private static string SanitizeForPath(string input) {

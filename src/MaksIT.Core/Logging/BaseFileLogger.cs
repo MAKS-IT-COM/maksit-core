@@ -45,6 +45,18 @@ public abstract class BaseFileLogger : ILogger, IDisposable {
   }
 
   protected Task AppendToLogFileAsync(string logFileName, string content) {
+
+    if (string.IsNullOrWhiteSpace(logFileName))
+      throw new ArgumentException("Log file name must not be null or empty.", nameof(logFileName));
+
+    var directory = Path.GetDirectoryName(logFileName);
+
+    if (string.IsNullOrWhiteSpace(directory))
+      throw new ArgumentException("Log file path must include a directory.", nameof(logFileName));
+
+    if (!Directory.Exists(directory))
+      Directory.CreateDirectory(directory);
+
     bool mutexAcquired = false;
     try {
         mutexAcquired = _fileMutex.WaitOne(10000);
