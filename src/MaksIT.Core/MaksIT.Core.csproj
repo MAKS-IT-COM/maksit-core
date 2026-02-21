@@ -42,16 +42,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="../../README.md" Pack="true" PackagePath="" />
-    <None Include="../../LICENSE.md" Pack="true" PackagePath="" />
-  </ItemGroup>
-
-  <!-- Source Link package -->
-  <ItemGroup>
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.103" PrivateAssets="All" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Cryptography.KeyDerivation" Version="10.0.3" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.9" />
     <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.3" />
@@ -64,4 +54,13 @@
     <PackageReference Include="System.Threading.RateLimiting" Version="10.0.3" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Include="..\..\LICENSE.md" Pack="true" PackagePath="\" Link="LICENSE.md" />
+    <None Include="..\..\README.md"  Pack="true" PackagePath="\" Link="README.md" />
+    <None Include="..\..\CHANGELOG.md" Pack="true" PackagePath="\" Link="CHANGELOG.md" />
+    
+    <None Include="..\..\assets\badges\**\*" Link="assets\badges\%(RecursiveDir)%(Filename)%(Extension)">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>

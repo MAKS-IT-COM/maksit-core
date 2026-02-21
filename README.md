@@ -1,5 +1,7 @@
 # MaksIT.Core Library Documentation
 
+![Line Coverage](assets/badges/coverage-lines.svg) ![Branch Coverage](assets/badges/coverage-branches.svg) ![Method Coverage](assets/badges/coverage-methods.svg)
+
 ## Table of Contents
 
 - [Abstractions](#abstractions)
