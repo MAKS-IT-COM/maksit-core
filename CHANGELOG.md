@@ -5,32 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## v1.6.3 - 2026-02-13
-
-### Changed
-- Updated dependencies to latest versions for improved performance and security.
-
-## v1.6.2 - 2026-02-13
+## v1.6.4 - 2026-02-21
 
 ### Added
-- `BaseFileLogger` idempotent log folder creation and tests
+- New shared utility modules under `utils/`:
+- `Logging.psm1` for timestamped, aligned log output.
+- `ScriptConfig.psm1` for shared settings loading and command assertions.
+- `GitTools.psm1` for reusable git operations.
+- `TestRunner.psm1` for shared test/coverage execution.
+- New `Generate-CoverageBadges` utility script and settings to generate SVG coverage badges.
 
 ### Changed
-- Improved `BaseFileLogger` to ensure log folder is recreated if deleted during runtime (idempotent folder creation).
-- Added comprehensive tests verifying log folder recreation and robustness against folder deletion scenarios.
-- Removed AI assisted CHANGELOG.md generation as it's weak and not worth the effort.
+- Refactored release/amend/badges scripts to a modular structure with shared modules.
+- Standardized script structure with regions and clearer comments.
+- Switched script output to centralized logging format with timestamps (where logging module is available).
+- Updated release settings comments (`_comments`) for clarity and accuracy.
+- Updated `README.md` to show coverage badges.
 
-## v1.6.1 - 2026-31-01
+### Removed
+- Removed legacy scripts from `src/scripts/` in favor of the `utils/`-based toolchain.
+- Removed unused helper logic (including obsolete step-wrapper usage and unused csproj helper).
 
-### Added
-- Added `CreateMutex` method to `BaseFileLogger`
-- Added `ResolveFolderPath` and `SanitizeForPath` methods to `FileLoggerProvider`
-- Added `ResolveFolderPath` and `SanitizeForPath` methods to `JsonFileLoggerProvider`
-- Added `LoggerPrefix` class for managing logger prefixes
-- AI assisted CHANGELOG.md generation
+### Fixed
+- Fixed NuGet packing metadata by explicitly packing `LICENSE.md`, `README.md`, and `CHANGELOG.md` into the package.
+- Fixed release pipeline packaging flow to create and resolve the `.nupkg` before `dotnet nuget push`.
+- Added `/staging` to `.gitignore` to avoid committing temporary release artifacts.
 
-### Changed
-- Improved error handling in `BaseFileLogger`
+### Security
+- Kept release-time git checks and branch/tag validation in shared release flow to reduce accidental publish risk.
+
 
 <!-- 
 Template for new releases:
