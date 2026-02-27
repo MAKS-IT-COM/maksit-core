@@ -21,7 +21,7 @@ Thank you for your interest in contributing to MaksIT.Core! This document provid
 
 ```bash
 cd src
-dotnet build MaksIT.Core.sln
+dotnet build MaksIT.Core.slnx
 ```
 
 ### Running Tests
@@ -246,4 +246,4 @@ If the release partially failed (e.g., NuGet succeeded but GitHub failed):
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the MIT License.
+By contributing, you agree that your contributions are licensed under the terms in `LICENSE.md`.

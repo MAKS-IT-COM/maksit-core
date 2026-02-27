@@ -1614,7 +1614,10 @@ string completedName = completed.GetDisplayName(); // "Completed"
 
 ## Contact
 
-For any inquiries or contributions, feel free to reach out:
+If you have any questions or need further assistance, feel free to reach out:
 
-- **Email**: maksym.sadovnychyy@gmail.com
-- **Author**: Maksym Sadovnychyy (MAKS-IT)
+- **Email**: [maksym.sadovnychyy@gmail.com](mailto:maksym.sadovnychyy@gmail.com)
+
+## License
+
+See `LICENSE.md`.
