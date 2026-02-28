@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## v1.6.3 - 2026-02-21
+## v1.6.4 - 2026-02-21
 
 ### Added
 - New shared utility modules under `utils/`:
@@ -33,7 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 - Kept release-time git checks and branch/tag validation in shared release flow to reduce accidental publish risk.
-  
+
 <!-- 
 Template for new releases:
 

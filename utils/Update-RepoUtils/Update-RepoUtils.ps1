@@ -7,9 +7,9 @@
 
 .DESCRIPTION
     This script clones the configured repository into a temporary directory,
-    removes the current working directory contents, preserves an existing
-    scriptsettings.json file, and copies the cloned src contents into the
-    current working directory.
+    refreshes the parent directory of this script, preserves existing
+    scriptsettings.json files in subfolders, and copies the cloned source
+    contents into that parent directory.
 
     All configuration is stored in scriptsettings.json.
 
@@ -18,14 +18,20 @@
 
 .NOTES
     CONFIGURATION (scriptsettings.json):
+    - dryRun: If true, logs the planned update without modifying files
     - repository.url: Git repository to clone
     - repository.sourceSubdirectory: Folder copied into the target directory
-    - repository.preserveFileName: Existing file in the target directory to keep
+    - repository.preserveFileName: Existing file name to preserve in subfolders
     - repository.cloneDepth: Depth used for git clone
 #>
 
 [CmdletBinding()]
-param()
+param(
+    [switch]$ContinueAfterSelfUpdate,
+    [string]$TargetDirectoryOverride,
+    [string]$ClonedSourceDirectoryOverride,
+    [string]$TemporaryRootOverride
+)
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -34,8 +40,18 @@ $ErrorActionPreference = 'Stop'
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $utilsDir = Split-Path $scriptDir -Parent
 
-# The target is the current working directory, not the script directory.
-$targetDirectory = (Get-Location).Path
+# Refresh the parent directory that contains the shared modules and sibling tools.
+$targetDirectory = if ([string]::IsNullOrWhiteSpace($TargetDirectoryOverride)) {
+    Split-Path $scriptDir -Parent
+}
+else {
+    [System.IO.Path]::GetFullPath($TargetDirectoryOverride)
+}
+$currentScriptPath = [System.IO.Path]::GetFullPath($MyInvocation.MyCommand.Path)
+$selfUpdateDirectory = 'Update-RepoUtils'
+$skippedRelativeDirectories = @(
+    [System.IO.Path]::Combine('Release-Package', 'CustomPlugins')
+)
 
 #region Import Modules
 
@@ -65,16 +81,17 @@ $settings = Get-ScriptSettings -ScriptDir $scriptDir
 #region Configuration
 
 $repositoryUrl = $settings.repository.url
+$dryRun = if ($null -ne $settings.dryRun) { [bool]$settings.dryRun } else { $false }
 $sourceSubdirectory = if ($settings.repository.sourceSubdirectory) { $settings.repository.sourceSubdirectory } else { 'src' }
 $preserveFileName = if ($settings.repository.preserveFileName) { $settings.repository.preserveFileName } else { 'scriptsettings.json' }
 $cloneDepth = if ($settings.repository.cloneDepth) { [int]$settings.repository.cloneDepth } else { 1 }
-$currentScriptName = Split-Path -Leaf $MyInvocation.MyCommand.Path
 
 #endregion
 
 #region Validate CLI Dependencies
 
 Assert-Command git
+Assert-Command pwsh
 
 if ([string]::IsNullOrWhiteSpace($repositoryUrl)) {
     Write-Error "repository.url is required in scriptsettings.json."
@@ -89,54 +106,201 @@ Write-Log -Level "INFO" -Message "========================================"
 Write-Log -Level "INFO" -Message "Update RepoUtils Script"
 Write-Log -Level "INFO" -Message "========================================"
 Write-Log -Level "INFO" -Message "Target directory: $targetDirectory"
+Write-Log -Level "INFO" -Message "Dry run: $dryRun"
 
-$temporaryRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("maksit-repoutils-update-" + [System.Guid]::NewGuid().ToString('N'))
+$ownsTemporaryRoot = [string]::IsNullOrWhiteSpace($TemporaryRootOverride)
+$temporaryRoot = if ($ownsTemporaryRoot) {
+    Join-Path ([System.IO.Path]::GetTempPath()) ("maksit-repoutils-update-" + [System.Guid]::NewGuid().ToString('N'))
+}
+else {
+    [System.IO.Path]::GetFullPath($TemporaryRootOverride)
+}
 
 try {
-    Write-LogStep "Cloning latest repository snapshot..."
-    & git clone --depth $cloneDepth $repositoryUrl $temporaryRoot
-    if ($LASTEXITCODE -ne 0) {
-        throw "git clone failed with exit code $LASTEXITCODE."
-    }
-    Write-Log -Level "OK" -Message "Repository cloned"
+    $clonedSourceDirectory = if ([string]::IsNullOrWhiteSpace($ClonedSourceDirectoryOverride)) {
+        Write-LogStep "Cloning latest repository snapshot..."
+        & git clone --depth $cloneDepth $repositoryUrl $temporaryRoot
+        if ($LASTEXITCODE -ne 0) {
+            throw "git clone failed with exit code $LASTEXITCODE."
+        }
+        Write-Log -Level "OK" -Message "Repository cloned"
 
-    $clonedSourceDirectory = Join-Path $temporaryRoot $sourceSubdirectory
+        Join-Path $temporaryRoot $sourceSubdirectory
+    }
+    else {
+        [System.IO.Path]::GetFullPath($ClonedSourceDirectoryOverride)
+    }
+
     if (-not (Test-Path -Path $clonedSourceDirectory -PathType Container)) {
         throw "The cloned repository does not contain the expected source directory: $clonedSourceDirectory"
     }
 
-    $existingPreservedFile = Join-Path $targetDirectory $preserveFileName
-    $preservedFileBackup = $null
-    if (Test-Path -Path $existingPreservedFile -PathType Leaf) {
-        $preservedFileBackup = Join-Path $temporaryRoot ("preserved-" + $preserveFileName)
-        Copy-Item -Path $existingPreservedFile -Destination $preservedFileBackup -Force
-        Write-Log -Level "OK" -Message "Preserved existing $preserveFileName"
+    if (-not $ContinueAfterSelfUpdate) {
+        if ($dryRun) {
+            Write-LogStep "Dry run self-update summary"
+            Write-Log -Level "INFO" -Message "Would refresh shared modules and $selfUpdateDirectory before relaunching the updater"
+        }
+        else {
+            Write-LogStep "Refreshing updater files..."
+            $selfUpdateFiles = Get-ChildItem -Path $clonedSourceDirectory -Recurse -Force -File |
+                Where-Object {
+                    $relativePath = [System.IO.Path]::GetRelativePath($clonedSourceDirectory, $_.FullName)
+                    $isRootFile = -not $relativePath.Contains([System.IO.Path]::DirectorySeparatorChar)
+                    $isUpdaterFile = $relativePath.StartsWith($selfUpdateDirectory + [System.IO.Path]::DirectorySeparatorChar, [System.StringComparison]::OrdinalIgnoreCase)
+
+                    $_.Name -ne $preserveFileName -and
+                    ($isRootFile -or $isUpdaterFile)
+                }
+
+            foreach ($sourceFile in $selfUpdateFiles) {
+                $relativePath = [System.IO.Path]::GetRelativePath($clonedSourceDirectory, $sourceFile.FullName)
+                $destinationPath = Join-Path $targetDirectory $relativePath
+                $destinationDirectory = Split-Path -Parent $destinationPath
+                if (-not (Test-Path -Path $destinationDirectory -PathType Container)) {
+                    New-Item -ItemType Directory -Path $destinationDirectory -Force | Out-Null
+                }
+
+                Copy-Item -Path $sourceFile.FullName -Destination $destinationPath -Force
+            }
+
+            Write-Log -Level "OK" -Message "Updater files refreshed"
+        }
+
+        if ($dryRun) {
+            Write-LogStep "Dry run bootstrap completed"
+            Write-Log -Level "INFO" -Message "Continuing with phase two in the current process because no files were changed"
+        }
+        else {
+            Write-LogStep "Relaunching the updated updater..."
+            & pwsh -File $currentScriptPath `
+                -ContinueAfterSelfUpdate `
+                -TargetDirectoryOverride $targetDirectory `
+                -ClonedSourceDirectoryOverride $clonedSourceDirectory `
+                -TemporaryRootOverride $temporaryRoot
+            if ($LASTEXITCODE -ne 0) {
+                throw "Relaunched updater failed with exit code $LASTEXITCODE."
+            }
+
+            Write-Log -Level "OK" -Message "Bootstrap phase completed"
+            return
+        }
+    }
+
+    $preservedFiles = @()
+    $updatePhaseSkippedDirectories = $skippedRelativeDirectories + $selfUpdateDirectory
+    $existingPreservedFiles = Get-ChildItem -Path $targetDirectory -Recurse -File -Filter $preserveFileName -ErrorAction SilentlyContinue
+    if ($existingPreservedFiles) {
+        foreach ($file in $existingPreservedFiles) {
+            $relativePath = [System.IO.Path]::GetRelativePath($targetDirectory, $file.FullName)
+            $backupPath = Join-Path $temporaryRoot ("preserved-" + ($relativePath -replace '[\\/:*?""<>|]', '_'))
+            $preservedFiles += [pscustomobject]@{
+                RelativePath = $relativePath
+                BackupPath = $backupPath
+            }
+
+            if (-not $dryRun) {
+                Copy-Item -Path $file.FullName -Destination $backupPath -Force
+            }
+        }
+        Write-Log -Level "OK" -Message "Preserved $($preservedFiles.Count) existing $preserveFileName file(s)"
     }
     else {
-        Write-Log -Level "WARN" -Message "No existing $preserveFileName found in target directory"
+        Write-Log -Level "WARN" -Message "No existing $preserveFileName files found in subfolders"
+    }
+
+    if ($dryRun) {
+        Write-LogStep "Dry run summary"
+        Write-Log -Level "INFO" -Message "Would remove all files under target except preserved $preserveFileName files"
+        Write-Log -Level "INFO" -Message "Would skip phase-two refresh for: $($updatePhaseSkippedDirectories -join ', ')"
+        Write-Log -Level "INFO" -Message "Would copy refreshed files from: $clonedSourceDirectory"
+        if ($preservedFiles.Count -gt 0) {
+            $preservedList = ($preservedFiles | ForEach-Object { $_.RelativePath }) -join ", "
+            Write-Log -Level "INFO" -Message "Would restore preserved files: $preservedList"
+        }
+        Write-Log -Level "OK" -Message "Dry run completed. No files were modified."
+        return
     }
 
     Write-LogStep "Cleaning target directory..."
-    $itemsToRemove = Get-ChildItem -Path $targetDirectory -Force |
+    $filesToRemove = Get-ChildItem -Path $targetDirectory -Recurse -Force -File |
         Where-Object {
+            $relativePath = [System.IO.Path]::GetRelativePath($targetDirectory, $_.FullName)
+            $isInSkippedDirectory = $false
+            foreach ($skippedDirectory in $updatePhaseSkippedDirectories) {
+                if ($relativePath.StartsWith($skippedDirectory + [System.IO.Path]::DirectorySeparatorChar, [System.StringComparison]::OrdinalIgnoreCase)) {
+                    $isInSkippedDirectory = $true
+                    break
+                }
+            }
+
             $_.Name -ne $preserveFileName -and
-            $_.Name -ne $currentScriptName
+            -not $isInSkippedDirectory
         }
 
-    foreach ($item in $itemsToRemove) {
-        Remove-Item -Path $item.FullName -Recurse -Force
+    foreach ($file in $filesToRemove) {
+        Remove-Item -Path $file.FullName -Force
+    }
+
+    $directoriesToRemove = Get-ChildItem -Path $targetDirectory -Recurse -Force -Directory |
+        Sort-Object { $_.FullName.Length } -Descending
+
+    foreach ($directory in $directoriesToRemove) {
+        $remainingItems = Get-ChildItem -Path $directory.FullName -Force -ErrorAction SilentlyContinue
+        if (-not $remainingItems) {
+            Remove-Item -Path $directory.FullName -Force
+        }
     }
     Write-Log -Level "OK" -Message "Target directory cleaned"
 
     Write-LogStep "Copying refreshed source files..."
-    Get-ChildItem -Path $clonedSourceDirectory -Force | ForEach-Object {
-        Copy-Item -Path $_.FullName -Destination $targetDirectory -Recurse -Force
+    $sourceFilesToCopy = Get-ChildItem -Path $clonedSourceDirectory -Recurse -Force -File |
+        Where-Object {
+            $relativePath = [System.IO.Path]::GetRelativePath($clonedSourceDirectory, $_.FullName)
+            $isInSkippedDirectory = $false
+            foreach ($skippedDirectory in $updatePhaseSkippedDirectories) {
+                if ($relativePath.StartsWith($skippedDirectory + [System.IO.Path]::DirectorySeparatorChar, [System.StringComparison]::OrdinalIgnoreCase)) {
+                    $isInSkippedDirectory = $true
+                    break
+                }
+            }
+
+            -not $isInSkippedDirectory
+        }
+
+    foreach ($sourceFile in $sourceFilesToCopy) {
+        $relativePath = [System.IO.Path]::GetRelativePath($clonedSourceDirectory, $sourceFile.FullName)
+        $destinationPath = Join-Path $targetDirectory $relativePath
+        $destinationDirectory = Split-Path -Parent $destinationPath
+        if (-not (Test-Path -Path $destinationDirectory -PathType Container)) {
+            New-Item -ItemType Directory -Path $destinationDirectory -Force | Out-Null
+        }
+
+        Copy-Item -Path $sourceFile.FullName -Destination $destinationPath -Force
+    }
+
+    foreach ($skippedDirectory in $updatePhaseSkippedDirectories) {
+        $skippedSourcePath = Join-Path $clonedSourceDirectory $skippedDirectory
+        if (Test-Path -Path $skippedSourcePath) {
+            Write-Log -Level "INFO" -Message "Skipped refresh for $skippedDirectory"
+        }
     }
     Write-Log -Level "OK" -Message "Source files copied"
 
-    if ($preservedFileBackup -and (Test-Path -Path $preservedFileBackup -PathType Leaf)) {
-        Copy-Item -Path $preservedFileBackup -Destination $existingPreservedFile -Force
-        Write-Log -Level "OK" -Message "$preserveFileName restored"
+    if ($preservedFiles.Count -gt 0) {
+        foreach ($preservedFile in $preservedFiles) {
+            if (-not (Test-Path -Path $preservedFile.BackupPath -PathType Leaf)) {
+                continue
+            }
+
+            $restorePath = Join-Path $targetDirectory $preservedFile.RelativePath
+            $restoreDirectory = Split-Path -Parent $restorePath
+            if (-not (Test-Path -Path $restoreDirectory -PathType Container)) {
+                New-Item -ItemType Directory -Path $restoreDirectory -Force | Out-Null
+            }
+
+            Copy-Item -Path $preservedFile.BackupPath -Destination $restorePath -Force
+        }
+        Write-Log -Level "OK" -Message "$preserveFileName files restored"
     }
 
     Write-Log -Level "OK" -Message "========================================"
@@ -144,7 +308,7 @@ try {
     Write-Log -Level "OK" -Message "========================================"
 }
 finally {
-    if (Test-Path -Path $temporaryRoot) {
+    if ($ownsTemporaryRoot -and (Test-Path -Path $temporaryRoot)) {
         Remove-Item -Path $temporaryRoot -Recurse -Force -ErrorAction SilentlyContinue
     }
 }
