@@ -1,3 +1,6 @@
+#requires -Version 7.0
+#requires -PSEdition Core
+
 <#
 .SYNOPSIS
     Generates SVG coverage badges for README.
@@ -20,7 +23,7 @@
     dotnet tool install -g dotnet-reportgenerator-globaltool
 
 .EXAMPLE
-    .\Generate-CoverageBadges.ps1
+    pwsh -File .\Generate-CoverageBadges.ps1
     Runs tests and generates coverage badges (and optionally HTML report if configured).
 
 .OUTPUTS
@@ -185,7 +188,7 @@ foreach ($badge in $Settings.badges) {
     $color = Get-BadgeColor $metricValue
     $svg = New-Badge -label $badge.label -value "$metricValue%" -color $color
     $path = Join-Path $BadgesDir $badge.name
-    $svg | Out-File -FilePath $path -Encoding utf8
+    $svg | Out-File -FilePath $path -Encoding utf8NoBOM
     Write-Log -Level "OK" -Message "$($badge.name): $($badge.label) = $metricValue%"
 }
 

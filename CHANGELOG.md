@@ -33,8 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 - Kept release-time git checks and branch/tag validation in shared release flow to reduce accidental publish risk.
-
-
+  
 <!-- 
 Template for new releases:
 
