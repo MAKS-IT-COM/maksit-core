@@ -23,6 +23,7 @@
     - repository.sourceSubdirectory: Folder copied into the target directory
     - repository.preserveFileName: Existing file name to preserve in subfolders
     - repository.cloneDepth: Depth used for git clone
+    - repository.skippedRelativeDirectories: Relative directories to exclude from phase-two refresh
 #>
 
 [CmdletBinding()]
@@ -49,9 +50,6 @@ else {
 }
 $currentScriptPath = [System.IO.Path]::GetFullPath($MyInvocation.MyCommand.Path)
 $selfUpdateDirectory = 'Update-RepoUtils'
-$skippedRelativeDirectories = @(
-    [System.IO.Path]::Combine('Release-Package', 'CustomPlugins')
-)
 
 #region Import Modules
 
@@ -85,6 +83,17 @@ $dryRun = if ($null -ne $settings.dryRun) { [bool]$settings.dryRun } else { $fal
 $sourceSubdirectory = if ($settings.repository.sourceSubdirectory) { $settings.repository.sourceSubdirectory } else { 'src' }
 $preserveFileName = if ($settings.repository.preserveFileName) { $settings.repository.preserveFileName } else { 'scriptsettings.json' }
 $cloneDepth = if ($settings.repository.cloneDepth) { [int]$settings.repository.cloneDepth } else { 1 }
+$skippedRelativeDirectories = if ($settings.repository.skippedRelativeDirectories) {
+    @(
+        $settings.repository.skippedRelativeDirectories |
+            ForEach-Object {
+                ([string]$_).Replace('/', [System.IO.Path]::DirectorySeparatorChar).Replace('\', [System.IO.Path]::DirectorySeparatorChar)
+            }
+    )
+}
+else {
+    @([System.IO.Path]::Combine('Release-Package', 'CustomPlugins'))
+}
 
 #endregion
 
