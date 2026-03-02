@@ -1,6 +1,5 @@
-﻿using System.Reflection;
+using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.Serialization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -42,6 +41,7 @@ public static class ObjectExtensions {
   /// Creates a deep clone of the object, preserving reference identity and supporting cycles.
   /// </summary>
   public static T DeepClone<T>(this T source) {
+    if (source is null) return default!;
     return (T)DeepCloneInternal(source, new Dictionary<object, object>(ReferenceEqualityComparer.Instance));
   }
 
@@ -49,7 +49,9 @@ public static class ObjectExtensions {
   /// Deeply compares two objects for structural equality (fields, including private ones).
   /// </summary>
   public static bool DeepEqual<T>(this T a, T b) {
-    return DeepEqualInternal(a, b, new HashSet<(object, object)>(ReferencePairComparer.Instance));
+    if (a is null && b is null) return true;
+    if (a is null || b is null) return false;
+    return DeepEqualInternal(a!, b!, new HashSet<(object, object)>(ReferencePairComparer.Instance));
   }
 
   /// <summary>
@@ -84,7 +86,7 @@ public static class ObjectExtensions {
       return CloneStruct(source, type, visited);
 
     // Reference type: allocate uninitialized object, then copy fields
-    var clone = FormatterServices.GetUninitializedObject(type);
+    var clone = RuntimeHelpers.GetUninitializedObject(type);
     visited[source] = clone;
     CopyAllFields(source, clone, type, visited);
     return clone;
@@ -249,8 +251,8 @@ public static class ObjectExtensions {
 
   private sealed class ReferenceEqualityComparer : IEqualityComparer<object> {
     public static readonly ReferenceEqualityComparer Instance = new ReferenceEqualityComparer();
-    public new bool Equals(object x, object y) => ReferenceEquals(x, y);
-    public int GetHashCode(object obj) => RuntimeHelpers.GetHashCode(obj);
+    public new bool Equals(object? x, object? y) => ReferenceEquals(x, y);
+    public int GetHashCode(object? obj) => RuntimeHelpers.GetHashCode(obj!);
   }
 
   private sealed class ReferencePairComparer : IEqualityComparer<(object, object)> {

@@ -1,4 +1,4 @@
-﻿namespace MaksIT.Core.Extensions;
+namespace MaksIT.Core.Extensions;
 
 public static class ExceptionExtensions {
   /// <summary>
@@ -7,6 +7,7 @@ public static class ExceptionExtensions {
   /// <param name="exception">The exception to extract messages from.</param>
   /// <returns>A list of exception messages.</returns>
   public static List<string> ExtractMessages(this Exception exception) {
+    ArgumentNullException.ThrowIfNull(exception);
     var messages = new List<string>();
     var current = exception;
 

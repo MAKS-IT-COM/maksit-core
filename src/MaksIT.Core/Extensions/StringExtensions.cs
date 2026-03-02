@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.Data;
 using System.Globalization;
 using System.Security.Cryptography;
@@ -246,8 +246,8 @@ namespace MaksIT.Core.Extensions {
     public static string ToKebabCase(this string input) => input.ToCase(StringCaseStyle.KebabCase);
 
     public static DataTable CSVToDataTable(this string filePath) {
-      if (string.IsNullOrEmpty(filePath))
-        throw new ArgumentNullException(nameof(filePath));
+      ArgumentNullException.ThrowIfNull(filePath);
+      if (string.IsNullOrWhiteSpace(filePath)) throw new ArgumentException("File path cannot be empty.", nameof(filePath));
 
       using var sr = new StreamReader(filePath);
 

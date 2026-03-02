@@ -77,4 +77,10 @@ public class ExceptionExtensionsTests {
     Assert.Single(messages);
     Assert.Equal("", messages[0]);
   }
+
+  [Fact]
+  public void ExtractMessages_WhenNull_ThrowsArgumentNullException() {
+    Exception? exception = null;
+    Assert.Throws<ArgumentNullException>(() => exception!.ExtractMessages());
+  }
 }

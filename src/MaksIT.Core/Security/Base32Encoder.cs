@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using System.Diagnostics.CodeAnalysis;
 
 
@@ -14,9 +14,8 @@ public static class Base32Encoder {
     [NotNullWhen(false)] out string? errorMessage
   ) {
     try {
-      if (data == null || data.Length == 0) {
-        throw new ArgumentNullException(nameof(data));
-      }
+      ArgumentNullException.ThrowIfNull(data);
+      if (data.Length == 0) throw new ArgumentException("Data cannot be empty.", nameof(data));
 
       var result = new StringBuilder();
       int buffer = data[0];
@@ -66,9 +65,8 @@ public static class Base32Encoder {
     [NotNullWhen(false)] out string? errorMessage
   ) {
     try {
-      if (string.IsNullOrEmpty(base32)) {
-        throw new ArgumentNullException(nameof(base32));
-      }
+      ArgumentNullException.ThrowIfNull(base32);
+      if (string.IsNullOrWhiteSpace(base32)) throw new ArgumentException("Base32 string cannot be empty.", nameof(base32));
 
       base32 = base32.TrimEnd(PaddingChar.ToCharArray());
       int byteCount = base32.Length * 5 / 8;
