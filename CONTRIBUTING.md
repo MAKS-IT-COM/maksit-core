@@ -46,7 +46,14 @@ This project uses the following commit message format:
 | `(feature):` | New feature or enhancement |
 | `(bugfix):` | Bug fix |
 | `(refactor):` | Code refactoring without functional changes |
-| `(chore):` | Maintenance tasks (dependencies, CI, documentation) |
+| `(perf):` | Performance improvement without changing behavior |
+| `(test):` | Add or update tests |
+| `(docs):` | Documentation-only changes |
+| `(build):` | Build system, dependencies, packaging, or project file changes |
+| `(ci):` | CI/CD pipeline or automation changes |
+| `(style):` | Formatting or non-functional code style changes |
+| `(revert):` | Revert a previous commit |
+| `(chore):` | General maintenance tasks that do not fit the types above |
 
 ### Examples
 
@@ -54,6 +61,13 @@ This project uses the following commit message format:
 (feature): add support for custom JWT claims
 (bugfix): fix multithreading issue in file logger
 (refactor): simplify expression extension methods
+(perf): reduce allocations in Base32 encoder
+(test): add coverage for IQueryable predicate composition
+(docs): clarify release workflow prerequisites
+(build): update package metadata in MaksIT.Core.csproj
+(ci): update GitHub Actions workflow for .NET 10
+(style): normalize using directives in extension tests
+(revert): revert breaking change in network connection handling
 (chore): update copyright year to 2026
 ```
 
