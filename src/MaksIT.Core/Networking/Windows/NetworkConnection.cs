@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
@@ -27,9 +27,9 @@ public class NetworkConnection : IDisposable {
         throw new PlatformNotSupportedException("NetworkConnection is only supported on Windows.");
       }
 
-      if (logger == null) throw new ArgumentNullException(nameof(logger));
-      if (networkName == null) throw new ArgumentNullException(nameof(networkName));
-      if (credentials == null) throw new ArgumentNullException(nameof(credentials));
+      ArgumentNullException.ThrowIfNull(logger);
+      ArgumentNullException.ThrowIfNull(networkName);
+      ArgumentNullException.ThrowIfNull(credentials);
 
       var netResource = new NetResource {
         Scope = ResourceScope.GlobalNetwork,

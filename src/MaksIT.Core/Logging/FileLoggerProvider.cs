@@ -8,7 +8,8 @@ public class FileLoggerProvider : ILoggerProvider {
   private readonly TimeSpan _retentionPeriod;
 
   public FileLoggerProvider(string folderPath, TimeSpan? retentionPeriod = null) {
-    _folderPath = folderPath ?? throw new ArgumentNullException(nameof(folderPath));
+    ArgumentNullException.ThrowIfNull(folderPath);
+    _folderPath = folderPath;
     _retentionPeriod = retentionPeriod ?? TimeSpan.FromDays(7); // Default retention period is 7 days
   }
 

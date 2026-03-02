@@ -1,4 +1,5 @@
-﻿using System.Linq.Expressions;
+using System.Linq;
+using System.Linq.Expressions;
 
 using MaksIT.Core.Extensions;
 
@@ -21,6 +22,28 @@ public class ExpressionExtensionsTests {
     Assert.True(compiledPredicate(new TestEntity { Age = 20, Name = "Alice" }));
     Assert.False(compiledPredicate(new TestEntity { Age = 17, Name = "Alice" }));
     Assert.False(compiledPredicate(new TestEntity { Age = 20, Name = "Bob" }));
+  }
+
+  /// <summary>
+  /// Ensures AndAlso produces an expression that works with IQueryable.Where (as used by EF Core).
+  /// </summary>
+  [Fact]
+  public void AndAlso_ShouldWorkWithIQueryableWhere() {
+    var source = new List<TestEntity> {
+      new() { Age = 20, Name = "Alice" },
+      new() { Age = 17, Name = "Alice" },
+      new() { Age = 20, Name = "Bob" },
+      new() { Age = 25, Name = "Amy" }
+    };
+    Expression<Func<TestEntity, bool>> first = x => x.Age > 18;
+    Expression<Func<TestEntity, bool>> second = x => (x.Name ?? "").StartsWith("A");
+    var combined = first.AndAlso(second);
+
+    var result = source.AsQueryable().Where(combined).ToList();
+
+    Assert.Equal(2, result.Count);
+    Assert.Contains(result, e => e.Name == "Alice" && e.Age == 20);
+    Assert.Contains(result, e => e.Name == "Amy" && e.Age == 25);
   }
 
   [Fact]

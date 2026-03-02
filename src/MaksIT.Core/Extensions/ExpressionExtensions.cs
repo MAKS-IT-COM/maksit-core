@@ -1,10 +1,19 @@
-﻿using System.Linq.Expressions;
+using System.Linq.Expressions;
 
 
 namespace MaksIT.Core.Extensions;
 
+/// <summary>
+/// Extension methods for combining and negating expression predicates.
+/// AndAlso and OrElse use parameter replacement (no Expression.Invoke), so the result
+/// is safe for use with IQueryable and EF Core (translatable to SQL).
+/// </summary>
 public static class ExpressionExtensions {
 
+  /// <summary>
+  /// Combines two predicates with AND. Uses a single parameter and Expression.AndAlso;
+  /// safe for IQueryable/EF Core (no Invoke).
+  /// </summary>
   public static Expression<Func<T, bool>> AndAlso<T>(this Expression<Func<T, bool>> first, Expression<Func<T, bool>> second) {
     ArgumentNullException.ThrowIfNull(first);
     ArgumentNullException.ThrowIfNull(second);
@@ -17,6 +26,10 @@ public static class ExpressionExtensions {
     return Expression.Lambda<Func<T, bool>>(combinedBody, parameter);
   }
 
+  /// <summary>
+  /// Combines two predicates with OR. Uses a single parameter and Expression.OrElse;
+  /// safe for IQueryable/EF Core (no Invoke).
+  /// </summary>
   public static Expression<Func<T, bool>> OrElse<T>(this Expression<Func<T, bool>> first, Expression<Func<T, bool>> second) {
     ArgumentNullException.ThrowIfNull(first);
     ArgumentNullException.ThrowIfNull(second);
@@ -30,7 +43,7 @@ public static class ExpressionExtensions {
   }
 
   public static Expression<Func<T, bool>> Not<T>(this Expression<Func<T, bool>> expression) {
-    if (expression == null) throw new ArgumentNullException(nameof(expression));
+    ArgumentNullException.ThrowIfNull(expression);
 
     var parameter = expression.Parameters[0];
     var body = Expression.Not(expression.Body);

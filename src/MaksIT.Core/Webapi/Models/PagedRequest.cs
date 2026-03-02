@@ -1,9 +1,15 @@
-﻿using System.Linq.Dynamic.Core;
+using System.Linq.Dynamic.Core;
 using System.Linq.Expressions;
 using System.Text.RegularExpressions;
 using MaksIT.Core.Abstractions.Webapi;
 using MaksIT.Core.Extensions;
 
+namespace MaksIT.Core.Webapi.Models;
+
+/// <summary>
+/// Base request model for paged list operations with optional filter and sort.
+/// BuildFilterExpression produces expressions suitable for IQueryable/EF Core (single parameter, translatable operations).
+/// </summary>
 public class PagedRequest : RequestModelBase {
   public int PageSize { get; set; } = 100;
   public int PageNumber { get; set; } = 1;
@@ -16,6 +22,11 @@ public class PagedRequest : RequestModelBase {
     return BuildFilterExpression<T>(Filters);
   }
 
+  /// <summary>
+  /// Parses the filter string into an Expression&lt;Func&lt;T, bool&gt;&gt; for use with IQueryable/EF Core.
+  /// Uses a single parameter; avoid filter syntax that would require non-translatable operations.
+  /// Supported: property access, ==, !=, &amp;&amp;, ||, !, Contains, StartsWith, EndsWith, ToLower() for strings.
+  /// </summary>
   public virtual Expression<Func<T, bool>> BuildFilterExpression<T>(string? filters) {
     if (string.IsNullOrWhiteSpace(filters))
       return x => true; // Returns an expression that doesn't filter anything.

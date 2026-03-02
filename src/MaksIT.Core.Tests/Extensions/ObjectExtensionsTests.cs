@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -233,6 +233,13 @@ namespace MaksIT.Core.Tests.Extensions {
 
       // Assert
       Assert.Same(s, s2);
+    }
+
+    [Fact]
+    public void DeepClone_WhenNull_ReturnsDefault() {
+      Person? source = null;
+      var result = source.DeepClone();
+      Assert.Null(result);
     }
 
     [Fact]

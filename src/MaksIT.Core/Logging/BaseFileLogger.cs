@@ -78,7 +78,8 @@ public abstract class BaseFileLogger : ILogger, IDisposable {
 
     foreach (var logFile in logFiles) {
       var fileName = Path.GetFileNameWithoutExtension(logFile);
-      if (DateTime.TryParseExact(fileName.Substring(4), "yyyy-MM-dd", null, System.Globalization.DateTimeStyles.None, out var logDate)) {
+      if (fileName.Length >= 4 && fileName.StartsWith("log_", StringComparison.Ordinal) &&
+          DateTime.TryParseExact(fileName.Substring(4), "yyyy-MM-dd", null, System.Globalization.DateTimeStyles.None, out var logDate)) {
         if (logDate < expirationDate) {
           File.Delete(logFile);
         }

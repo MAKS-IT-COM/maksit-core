@@ -1,9 +1,22 @@
-﻿# Changelog
+# Changelog
 
 All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## v1.6.5 - 2026-02-02
+
+### Changed
+- Replaced explicit `ArgumentNullException` throws with `ArgumentNullException.ThrowIfNull` in `ExpressionExtensions`, `NetworkConnection`, `Base32Encoder`, `StringExtensions.CSVToDataTable`, `FileLoggerProvider`, and `JsonFileLoggerProvider`.
+- **Base32Encoder**: empty input now throws `ArgumentException` instead of `ArgumentNullException` for clearer semantics.
+- **StringExtensions.CSVToDataTable**: null file path throws via `ThrowIfNull`; empty/whitespace path throws `ArgumentException`.
+- **ObjectExtensions**: `DeepClone` returns `default` for null input; `DeepEqual` explicitly treats (null, null) as true and (null, non-null) as false. Replaced obsolete `FormatterServices.GetUninitializedObject` with `RuntimeHelpers.GetUninitializedObject`. Fixed nullability in `ReferenceEqualityComparer` to match `IEqualityComparer<object>`.
+- **TotpGenerator**: recovery code generation uses range syntax (`code[..4]`, `code[4..8]`) instead of `Substring`.
+
+### Fixed
+- **ExceptionExtensions.ExtractMessages**: null check added to avoid `NullReferenceException` when passed null.
+- **BaseFileLogger.RemoveExpiredLogFiles**: guard added before `Substring(4)` so malformed log file names do not throw.
 
 ## v1.6.4 - 2026-02-21
 

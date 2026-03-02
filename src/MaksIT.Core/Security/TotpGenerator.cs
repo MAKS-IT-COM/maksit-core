@@ -1,4 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
 
 namespace MaksIT.Core.Security;
@@ -132,8 +132,8 @@ public static class TotpGenerator {
       recoveryCodes = new List<string>();
 
       for (int i = 0; i < defaultCodeCount; i++) {
-        var code = Guid.NewGuid().ToString("N").Substring(0, 8); // Generate an 8-character code
-        var formattedCode = $"{code.Substring(0, 4)}-{code.Substring(4, 4)}"; // Format as XXXX-XXXX
+        var code = Guid.NewGuid().ToString("N")[..8]; // Generate an 8-character code
+        var formattedCode = $"{code[..4]}-{code[4..8]}"; // Format as XXXX-XXXX
         recoveryCodes.Add(formattedCode);
       }
 
