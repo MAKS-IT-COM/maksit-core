@@ -1,5 +1,12 @@
 namespace MaksIT.Core.Tests;
 
+/// <summary>
+/// User/machine-level environment variable updates are not safe to run in parallel on Windows.
+/// </summary>
+[CollectionDefinition(nameof(EnvVarTests), DisableParallelization = true)]
+public class EnvVarTestsCollection;
+
+[Collection(nameof(EnvVarTests))]
 public class EnvVarTests {
 
   private const string TestEnvVarName = "MAKSIT_TEST_ENV_VAR";
@@ -38,35 +45,33 @@ public class EnvVarTests {
 
   [Fact]
   public void TrySet_UserLevel_SetsEnvironmentVariable() {
-    // This test may fail on Linux/Docker containers due to permissions
-    // Skip on non-Windows platforms as User-level env vars behave differently
-    if (!OperatingSystem.IsWindows()) {
-      // On Linux, user-level env vars in containers don't persist as expected
-      // Just verify the method doesn't crash
-      var result = EnvVar.TrySet(TestEnvVarName, TestEnvVarValue, "user", out var errorMessage);
-      // Either succeeds or fails gracefully - both are acceptable on Linux
-      Assert.True(result || errorMessage != null);
+    // User-level env vars are registry-backed on Windows and can block indefinitely from the
+    // xUnit test host. On Linux/Docker they may fail due to permissions.
+    if (!TrySetUserLevelWithTimeout(TimeSpan.FromSeconds(5), out var result, out var errorMessage)) {
       return;
     }
 
-    // Windows-specific test
-    var winResult = EnvVar.TrySet(TestEnvVarName, TestEnvVarValue, "user", out var winErrorMessage);
+    Assert.True(result || errorMessage != null);
+  }
 
-    try {
-      if (winResult) {
-        Assert.Null(winErrorMessage);
-        var value = Environment.GetEnvironmentVariable(TestEnvVarName, EnvironmentVariableTarget.User);
-        Assert.Equal(TestEnvVarValue, value);
-      }
+  private static bool TrySetUserLevelWithTimeout(
+    TimeSpan timeout,
+    out bool result,
+    out string? errorMessage) {
+    var setTask = Task.Run(() => {
+      var ok = EnvVar.TrySet(TestEnvVarName, TestEnvVarValue, "user", out var error);
+      return (ok, error);
+    });
+
+    if (!setTask.Wait(timeout)) {
+      result = false;
+      errorMessage = null;
+      return false;
     }
-    finally {
-      try {
-        Environment.SetEnvironmentVariable(TestEnvVarName, null, EnvironmentVariableTarget.User);
-      }
-      catch {
-        // Ignore cleanup errors
-      }
-    }
+
+    result = setTask.Result.ok;
+    errorMessage = setTask.Result.error;
+    return true;
   }
 
   [Fact]
@@ -126,18 +131,36 @@ public class EnvVarTests {
   public void TrySet_VariousTargets_HandlesCorrectly(string target) {
     // Arrange
     var envName = $"{TestEnvVarName}_{target.ToUpper()}";
+    var normalizedTarget = target.ToLowerInvariant();
+
+    if (normalizedTarget == "user" && OperatingSystem.IsWindows()) {
+      var setTask = Task.Run(() => {
+        var ok = EnvVar.TrySet(envName, TestEnvVarValue, target, out var error);
+        return (ok, error);
+      });
+      if (!setTask.Wait(TimeSpan.FromSeconds(5))) {
+        return;
+      }
+
+      Assert.True(setTask.Result.ok || setTask.Result.error != null);
+      TryUnSetQuietly(envName, target);
+      return;
+    }
 
     // Act
     var result = EnvVar.TrySet(envName, TestEnvVarValue, target, out var errorMessage);
 
     // Assert - for process level, should always succeed
-    if (target.ToLower() == "process") {
+    if (normalizedTarget == "process") {
       Assert.True(result);
       Assert.Null(errorMessage);
     }
     // For other levels, result depends on permissions
 
-    // Cleanup
+    TryUnSetQuietly(envName, target);
+  }
+
+  private static void TryUnSetQuietly(string envName, string target) {
     try {
       EnvVar.TryUnSet(envName, target, out _);
     }

@@ -5,7 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## v1.6.5 - 2026-02-02
+## [1.6.6] - 2026-06-02
+
+### Changed
+- Reorganized `utils/` into engine, plugin, and module layout (`engines/`, `plugins/`, `modules/`, `tools/`) with root entry scripts (`Invoke-TestEngine.bat`, `Invoke-ReleasePackage.bat`, and related launchers).
+- **TestRunner**: resolves `.csproj` paths explicitly, builds once, then runs `dotnet test --no-build` to reduce file-lock failures on Windows.
+
+### Fixed
+- Test engine `scriptSettings.json` paths corrected for the `utils/engines/test` layout.
+- **EnvVarTests**: user-level environment variable tests no longer hang the xUnit test host on Windows (non-parallel collection and timeout-safe skip).
+- **.gitignore**: added override rules so the `utils/` folder is tracked despite broader ignore patterns.
+
+## [1.6.5] - 2026-03-02
 
 ### Changed
 - Replaced explicit `ArgumentNullException` throws with `ArgumentNullException.ThrowIfNull` in `ExpressionExtensions`, `NetworkConnection`, `Base32Encoder`, `StringExtensions.CSVToDataTable`, `FileLoggerProvider`, and `JsonFileLoggerProvider`.
@@ -18,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **ExceptionExtensions.ExtractMessages**: null check added to avoid `NullReferenceException` when passed null.
 - **BaseFileLogger.RemoveExpiredLogFiles**: guard added before `Substring(4)` so malformed log file names do not throw.
 
-## v1.6.4 - 2026-02-21
+## [1.6.4] - 2026-02-21
 
 ### Added
 - New shared utility modules under `utils/`:
