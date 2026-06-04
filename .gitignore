@@ -261,9 +261,5 @@ paket-files/
 __pycache__/
 *.pyc
 
-/.cursor
-/.vscode
-/staging
-
 #Custom
 ![Uu]tils/**
