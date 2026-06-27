@@ -1,6 +1,8 @@
 # MaksIT.Core Library Documentation
 
-![Line Coverage](assets/badges/coverage-lines.svg) ![Branch Coverage](assets/badges/coverage-branches.svg) ![Method Coverage](assets/badges/coverage-methods.svg)
+![Line Coverage](https://img.shields.io/badge/Line%20Coverage-60.1%25-green)
+![Branch Coverage](https://img.shields.io/badge/Branch%20Coverage-49.9%25-yellowgreen)
+![Method Coverage](https://img.shields.io/badge/Method%20Coverage-69.2%25-green)
 
 ## Table of Contents
 
