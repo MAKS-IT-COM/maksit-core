@@ -12,7 +12,7 @@
 
     <!-- NuGet package metadata -->
     <PackageId>MaksIT.Core</PackageId>
-    <Version>1.6.8</Version>
+    <Version>1.6.9</Version>
     <Authors>Maksym Sadovnychyy</Authors>
     <Company>MAKS-IT</Company>
     <Product>MaksIT.Core</Product>
@@ -42,16 +42,16 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.AspNetCore.Cryptography.KeyDerivation" Version="10.0.9" />
-    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.11" />
-    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.9" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.9" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.9" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.9" />
-    <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.19.1" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.19.1" />
-    <PackageReference Include="System.Linq.Dynamic.Core" Version="1.7.2" />
-    <PackageReference Include="System.Threading.RateLimiting" Version="10.0.9" />
+    <PackageReference Include="Microsoft.AspNetCore.Cryptography.KeyDerivation" Version="10.0.11" />
+    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.12" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.11" />
+    <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="8.22.0" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.22.0" />
+    <PackageReference Include="System.Linq.Dynamic.Core" Version="1.7.3" />
+    <PackageReference Include="System.Threading.RateLimiting" Version="10.0.11" />
   </ItemGroup>
 
   <ItemGroup>
