@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.9] - 2026-08-14
+
+### Changed
+- Updated NuGet dependencies: Microsoft.Extensions.* and System.Threading.RateLimiting 10.0.9 → 10.0.11, Microsoft.AspNetCore.* 2.3.11 → 2.3.12, Microsoft.IdentityModel.Tokens and System.IdentityModel.Tokens.Jwt 8.19.1 → 8.22.0, System.Linq.Dynamic.Core 1.7.2 → 1.7.3, Microsoft.NET.Test.Sdk 18.7.0 → 18.9.0
+- Synced RepoUtils: fail-fast external commands (`ThrowOnError`), exact plugin success checks (avoid polluted PowerShell return arrays), discovered plugin group loading, and removed `Update-RepoUtils` (local-copy sync only)
+
 ## [1.6.8] - 2026-06-27
 
 ### Changed
