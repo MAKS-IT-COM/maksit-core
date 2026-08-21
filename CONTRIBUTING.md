@@ -26,10 +26,24 @@ dotnet build MaksIT.Core.slnx
 
 ### Running Tests
 
+Preferred: `utils\Invoke-TestEngine.bat` (DotNetTest → QualityGate → CoverageBadges). Tests run under **Microsoft Testing Platform** (`src/global.json` `test.runner` next to the `.slnx`) with **xunit.v3** and **coverlet.MTP**.
+
 ```bash
 cd src
 dotnet test MaksIT.Core.Tests
+dotnet test MaksIT.Core.Cli.Tests
 ```
+
+### Running the secrets CLI
+
+```bash
+cd src
+dotnet run --project MaksIT.Core.Cli
+dotnet run --project MaksIT.Core.Cli -- secret
+dotnet run --project MaksIT.Core.Cli -- --help
+```
+
+No arguments opens the interactive numbered menu. Commands/flags are for scripts and agents (values on stdout, errors on stderr). It is not a `dotnet tool` and is not published to NuGet.
 
 ## Commit Message Format
 
@@ -119,8 +133,8 @@ Orchestration lives in **`utils/`** (from [maksit-repoutils](https://github.com/
 
 ### Workflow
 
-1. Bump `<Version>` in `src/MaksIT.Core/MaksIT.Core.csproj` and **CHANGELOG.md**
-2. Commit, tag `vX.Y.Z` on `main`
+1. Bump `<Version>` in `src/MaksIT.Core/MaksIT.Core.csproj` and `src/MaksIT.Core.Cli/MaksIT.Core.Cli.csproj` (keep them aligned) and **CHANGELOG.md**
+2. Commit, tag `v{version}` on `main` (`v1.2.3` or SemVer prerelease such as `v0.1.0-alpha.1`, `v0.1.0-beta.1`, `v0.1.0-rc.1`). GitHub marks hyphenated versions as prerelease.
 3. Set `$env:GitHub`, `$env:NuGet`, run `utils\Invoke-ReleasePackage-Single.bat`
 
 Dry-run: `pwsh -File utils\engines\release\Invoke-ReleasePackage.ps1 -DryRun`

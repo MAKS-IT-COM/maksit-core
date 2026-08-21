@@ -1,11 +1,30 @@
 # MaksIT.Core Library Documentation
 
-![Line Coverage](https://img.shields.io/badge/Line%20Coverage-60.1%25-green)
-![Branch Coverage](https://img.shields.io/badge/Branch%20Coverage-49.9%25-yellowgreen)
-![Method Coverage](https://img.shields.io/badge/Method%20Coverage-69.2%25-green)
+![Line Coverage](https://img.shields.io/badge/Line%20Coverage-38.5%25-yellow)
+![Branch Coverage](https://img.shields.io/badge/Branch%20Coverage-28.4%25-yellow)
+![Method Coverage](https://img.shields.io/badge/Method%20Coverage-37.9%25-yellow)
+
+**MaksIT.Core** is a .NET 10 library of shared helpers used across MaksIT products: domain/DTO/Web API bases, strongly-typed enumerations, extensions, logging, security (JWT, JWK, JWS, TOTP, AES-GCM), sagas, COMB GUIDs, and Web API pagination.
+
+Install from NuGet:
+
+```bash
+dotnet add package MaksIT.Core
+```
+
+The secrets CLI (`MaksIT.Core.Cli`) is **not** published to NuGet. It ships in the GitHub release zip next to `MaksIT.Core.*.nupkg`.
+
+| | |
+|--|--|
+| Tests / coverage badges | `utils\Invoke-TestEngine.bat` |
+| Release (pack, NuGet, GitHub) | `utils\Invoke-ReleasePackage.bat` |
+| Contributing | [CONTRIBUTING.md](CONTRIBUTING.md) |
+| Changelog | [CHANGELOG.md](CHANGELOG.md) |
+| License | [LICENSE.md](LICENSE.md) |
 
 ## Table of Contents
 
+- [CLI (secrets toolkit)](#cli-secrets-toolkit)
 - [Abstractions](#abstractions)
   - [Base Classes](#base-classes)
   - [Enumeration](#enumeration)
@@ -14,12 +33,15 @@
   - [DateTime Extensions](#datetime-extensions)
   - [String Extensions](#string-extensions)
   - [Object Extensions](#object-extensions)
+  - [Exception Extensions](#exception-extensions)
+  - [Formats Extensions](#formats-extensions)
   - [DataTable Extensions](#datatable-extensions)
   - [Guid Extensions](#guid-extensions)
   - [Enum Extensions](#enum-extensions)
 - [Logging](#logging)
   - [File Logger](#file-logger)
   - [JSON File Logger](#json-file-logger)
+  - [Console Loggers](#console-loggers)
   - [Logger Prefix](#logger-prefix)
 - [Threading](#threading)
   - [Lock Manager](#lock-manager)
@@ -29,17 +51,20 @@
 - [Security](#security)
   - [AES-GCM Utility](#aes-gcm-utility)
   - [Base32 Encoder](#base32-encoder)
+  - [Base64Url Utility](#base64url-utility)
   - [Checksum Utility](#checksum-utility)
   - [Password Hasher](#password-hasher)
   - [JWT Generator](#jwt-generator)
   - [JWK Generator](#jwk-generator)
-  - [JWK Thumbprint Utility](#jwk-thumbprint-utility)
   - [JWS Generator](#jws-generator)
+  - [JWK Thumbprint Utility](#jwk-thumbprint-utility)
   - [TOTP Generator](#totp-generator)
 - [Web API](#web-api)
   - [Paged Request](#paged-request)
   - [Paged Response](#paged-response)
   - [Patch Operation](#patch-operation)
+  - [Error Handling Middleware](#error-handling-middleware)
+  - [Trace ID Logging Scope Middleware](#trace-id-logging-scope-middleware)
 - [Sagas](#sagas)
 - [CombGuidGenerator](#combguidgenerator)
 - [Others](#others)
@@ -48,11 +73,60 @@
   - [File System](#file-system)
   - [Processes](#processes)
 
+## CLI (secrets toolkit)
+
+Generates the same secrets the library uses at runtime (JWT signing keys, password pepper, AES-256 keys, TOTP material, COMB GUIDs). It is **not** published to NuGet; the exe ships in the GitHub release zip next to `MaksIT.Core.*.nupkg`.
+
+- **No arguments** — interactive numbered menu.
+- **With commands** — non-interactive flags for scripts and agents. Values go to stdout; errors to stderr; exit `0`/`1`.
+
+### Run
+
+```bash
+cd src
+dotnet run --project MaksIT.Core.Cli
+dotnet run --project MaksIT.Core.Cli -- --help
+dotnet run --project MaksIT.Core.Cli -- secret
+```
+
+From an unpacked release zip:
+
+```bash
+MaksIT.Core.Cli/MaksIT.Core.Cli
+MaksIT.Core.Cli/MaksIT.Core.Cli secret --bytes 32
+```
+
+### Agent commands
+
+| Command | Output |
+|---------|--------|
+| `secret [--bytes 32]` | Base64 secret (JWT signing / pepper) |
+| `jwt secret [--bytes 32]` | Same as `secret` |
+| `jwt refresh` | Opaque refresh token |
+| `jwt generate --secret S --issuer I --audience A [--expiration 60] [--user-id] [--username] [--roles] [--acl]` | Access JWT |
+| `jwt validate --secret S --issuer I --audience A --token T` | Claims JSON |
+| `aes key` | Base64 AES-256 key |
+| `totp secret` | Base32 TOTP secret |
+| `totp recovery [--count 10]` | Recovery codes (one per line) |
+| `totp link --label L --username U --secret S --issuer I` | `otpauth://` URI |
+| `totp validate --secret S --code C [--tolerance 1]` | `valid` / `invalid` (exit 1 if invalid) |
+| `password hash --pepper P --password PWD` | JSON `{ salt, hash }` |
+| `guid comb [--type PostgreSql]` | COMB GUID (`SqlServer` also accepted) |
+
+Typical `appsecrets.json` values:
+
+| Menu / command | Writes |
+|----------------|--------|
+| Generate secret / `secret` | `JwtSettings` signing secret or `PasswordPepper` |
+| AES-GCM key / `aes key` | host encryption key |
+| TOTP / 2FA / `totp secret` | authenticator shared key / recovery codes |
+| JWT generate | debug access tokens against a known secret |
+
 ## Abstractions
 
 ### Base Classes
 
-The following base classes in the `MaksIT.Core.Abstractions` namespace provide a foundation for implementing domain, DTO, and Web API models, ensuring consistency and maintainability in application design.
+The following base classes in the `MaksIT.Core.Abstractions` namespaces (`Domain`, `Dto`, `Webapi`, `Query`) provide a foundation for implementing domain, DTO, query, and Web API models, ensuring consistency and maintainability in application design.
 
 ---
 
@@ -152,6 +226,55 @@ public class UserResponse : ResponseModelBase {
 
 ---
 
+##### 7. **`PatchRequestModelBase`**
+
+###### Summary
+Represents the base class for Web API PATCH request models.
+
+###### Purpose
+- Extends `RequestModelBase` with a dictionary of property names to `PatchOperation` values.
+- Validates that each operation is a defined `PatchOperation` enum value.
+- Provides `TryGetOperation` for case-insensitive lookup by property name.
+
+###### Example Usage
+```csharp
+public class UserPatchRequest : PatchRequestModelBase {
+    public string? Name { get; set; }
+    public List<string>? Roles { get; set; }
+}
+
+var patch = new UserPatchRequest {
+    Name = "New Name",
+    Operations = new Dictionary<string, PatchOperation> {
+        ["Name"] = PatchOperation.SetField,
+        ["Roles"] = PatchOperation.AddToCollection
+    }
+};
+
+if (patch.TryGetOperation(nameof(UserPatchRequest.Name), out var operation)) {
+    // operation == PatchOperation.SetField
+}
+```
+
+---
+
+##### 8. **`QueryResultBase<T>`**
+
+###### Summary
+Represents a base class for query-layer results with a unique identifier (`MaksIT.Core.Abstractions.Query`).
+
+###### Purpose
+- Provides a common `Id` property for read-model / query results.
+
+###### Example Usage
+```csharp
+public class UserQueryResult : QueryResultBase<Guid> {
+    public required string Name { get; set; }
+}
+```
+
+---
+
 #### Features and Benefits
 
 1. **Consistency**:
@@ -210,69 +333,6 @@ public class ProductResponse : ResponseModelBase {
 ---
 
 This structure promotes clean code principles, reducing redundancy and improving maintainability across the application layers.
-
----
-
-### CombGuidGenerator
-
-The `CombGuidGenerator` class in the `MaksIT.Core.Comb` namespace provides methods for generating and extracting COMB GUIDs (GUIDs with embedded timestamps). COMB GUIDs improve index locality by combining randomness with a sortable timestamp.
-
----
-
-#### Features
-
-1. **Generate COMB GUIDs**:
-   - Create GUIDs with embedded timestamps for improved database indexing.
-
-2. **Extract Timestamps**:
-   - Retrieve the embedded timestamp from a COMB GUID.
-
-3. **Support for Multiple Formats**:
-   - Generate COMB GUIDs compatible with SQL Server and PostgreSQL.
-
----
-
-#### Example Usage
-
-##### Generating a COMB GUID
-```csharp
-var baseGuid = Guid.NewGuid();
-var timestamp = DateTime.UtcNow;
-
-// Generate a COMB GUID for SQL Server
-var combGuid = CombGuidGenerator.CreateCombGuid(baseGuid, timestamp, CombGuidType.SqlServer);
-
-// Generate a COMB GUID for PostgreSQL
-var combGuidPostgres = CombGuidGenerator.CreateCombGuid(baseGuid, timestamp, CombGuidType.PostgreSql);
-```
-
-##### Extracting a Timestamp
-```csharp
-var extractedTimestamp = CombGuidGenerator.ExtractTimestamp(combGuid, CombGuidType.SqlServer);
-Console.WriteLine($"Extracted Timestamp: {extractedTimestamp}");
-```
-
-##### Generating a COMB GUID with Current Timestamp
-```csharp
-var combGuidWithCurrentTimestamp = CombGuidGenerator.CreateCombGuid(Guid.NewGuid(), CombGuidType.SqlServer);
-```
-
----
-
-#### Best Practices
-
-1. **Use COMB GUIDs for Indexing**:
-   - COMB GUIDs are ideal for database indexing as they improve index locality.
-
-2. **Choose the Correct Format**:
-   - Use `CombGuidType.SqlServer` for SQL Server and `CombGuidType.PostgreSql` for PostgreSQL.
-
-3. **Ensure UTC Timestamps**:
-   - Always use UTC timestamps to ensure consistency across systems.
-
----
-
-The `CombGuidGenerator` class simplifies the creation and management of COMB GUIDs, making it easier to work with GUIDs in database applications.
 
 ---
 
@@ -353,72 +413,13 @@ values.Sort(); // Orders by ID
 
 ---
 
-The `Enumeration` class provides a powerful alternative to traditional enums, offering flexibility and functionality for scenarios requiring additional metadata or logic.
+The `Enumeration` class provides a powerful alternative to traditional enums, offering flexibility and functionality for scenarios requiring additional metadata or logic. In-library examples include `LoggerPrefix`, `CustomClaims`, `JwkKeyType`, `JwkCurve`, and `JwkAlgorithm`.
 
 ---
 
-### Sagas
+## Extensions
 
-The `Sagas` namespace in the `MaksIT.Core` project provides a framework for managing distributed transactions or workflows. It includes classes for defining saga steps, contexts, and builders.
-
----
-
-#### Features
-
-1. **Saga Context**:
-   - Manage the state and data of a saga.
-
-2. **Saga Steps**:
-   - Define individual steps in a saga workflow.
-
-3. **Saga Builder**:
-   - Build and execute sagas dynamically.
-
----
-
-#### Example Usage
-
-##### Defining a Saga Step
-```csharp
-public class MySagaStep : LocalSagaStep {
-    public override Task ExecuteAsync(LocalSagaContext context) {
-        // Perform step logic here
-        return Task.CompletedTask;
-    }
-}
-```
-
-##### Building a Saga
-```csharp
-var saga = new LocalSagaBuilder()
-    .AddStep(new MySagaStep())
-    .Build();
-
-await saga.ExecuteAsync();
-```
-
----
-
-#### Best Practices
-
-1. **Idempotency**:
-   - Ensure saga steps are idempotent to handle retries gracefully.
-
-2. **Error Handling**:
-   - Implement robust error handling and compensation logic for failed steps.
-
-3. **State Management**:
-   - Use the saga context to manage state and pass data between steps.
-
----
-
-The `Sagas` namespace simplifies the implementation of distributed workflows, making it easier to manage complex transactions and processes.
-
----
-
-### Extensions
-
-#### Expression Extensions
+### Expression Extensions
 
 The `ExpressionExtensions` class provides utility methods for combining and manipulating LINQ expressions. These methods are particularly useful for building dynamic queries in a type-safe manner.
 
@@ -427,13 +428,13 @@ The `ExpressionExtensions` class provides utility methods for combining and mani
 #### Features
 
 1. **Combine Expressions**:
-   - Combine two expressions using logical operators like `AndAlso` and `OrElse`.
+   - Combine two predicates with `AndAlso` and `OrElse` using parameter replacement (no `Expression.Invoke`), so the result is safe for `IQueryable` and EF Core.
 
 2. **Negate Expressions**:
-   - Negate an expression using the `Not` method.
+   - Negate a predicate with `Not`.
 
 3. **Batch Processing**:
-   - Divide a collection into smaller batches for processing.
+   - Split an `IEnumerable<T>` into smaller lists with `Batch`.
 
 ---
 
@@ -445,6 +446,7 @@ Expression<Func<int, bool>> isEven = x => x % 2 == 0;
 Expression<Func<int, bool>> isPositive = x => x > 0;
 
 var combined = isEven.AndAlso(isPositive);
+var either = isEven.OrElse(isPositive);
 var result = combined.Compile()(4); // True
 ```
 
@@ -457,7 +459,7 @@ var result = notEven.Compile()(3); // True
 
 ---
 
-#### DateTime Extensions
+### DateTime Extensions
 
 The `DateTimeExtensions` class provides methods for manipulating and querying `DateTime` objects. These methods simplify common date-related operations.
 
@@ -466,13 +468,13 @@ The `DateTimeExtensions` class provides methods for manipulating and querying `D
 #### Features
 
 1. **Add Workdays**:
-   - Add a specified number of workdays to a date, excluding weekends and holidays.
+   - Add a specified number of workdays to a date, skipping weekends and dates in an `IHolidayCalendar`.
 
 2. **Find Specific Dates**:
-   - Find the next occurrence of a specific day of the week.
+   - Find the next occurrence of a specific day of the week (`NextWeekday`, `ToNextWeekday`).
 
 3. **Month and Year Boundaries**:
-   - Get the start or end of the current month or year.
+   - Get the start or end of the current month or year, and test those boundaries.
 
 ---
 
@@ -480,8 +482,12 @@ The `DateTimeExtensions` class provides methods for manipulating and querying `D
 
 ##### Adding Workdays
 ```csharp
+public sealed class NoHolidays : IHolidayCalendar {
+    public bool Contains(DateTime date) => false;
+}
+
 DateTime today = DateTime.Today;
-DateTime futureDate = today.AddWorkdays(5);
+DateTime futureDate = today.AddWorkdays(5, new NoHolidays());
 ```
 
 ##### Finding the Next Monday
@@ -492,7 +498,7 @@ DateTime nextMonday = today.NextWeekday(DayOfWeek.Monday);
 
 ---
 
-#### String Extensions
+### String Extensions
 
 The `StringExtensions` class provides a wide range of methods for string manipulation, validation, and conversion.
 
@@ -501,13 +507,16 @@ The `StringExtensions` class provides a wide range of methods for string manipul
 #### Features
 
 1. **Pattern Matching**:
-   - Check if a string matches a pattern using SQL-like wildcards.
+   - Check if a string matches a pattern using SQL-like wildcards (`Like`).
 
 2. **Substring Extraction**:
    - Extract substrings from the left, right, or middle of a string.
 
 3. **Type Conversion**:
-   - Convert strings to various types, such as integers, booleans, and enums.
+   - Convert strings to integers, booleans, dates, GUIDs, and enums (`ToObject<T>` deserializes JSON).
+
+4. **JSON Deserialization**:
+   - `ToObject<T>()` / `ToObject<T>(converters)` using `System.Text.Json`.
 
 ---
 
@@ -523,9 +532,14 @@ bool matches = "example".Like("exa*e"); // True
 string result = "example".Left(3); // "exa"
 ```
 
+##### JSON Deserialization
+```csharp
+var person = json.ToObject<Person>();
+```
+
 ---
 
-#### Object Extensions
+### Object Extensions
 
 The `ObjectExtensions` class provides advanced methods for working with objects, including serialization, deep cloning, and structural equality comparison.
 
@@ -598,7 +612,56 @@ current.RevertFrom(snapshot);
 
 ---
 
-#### DataTable Extensions
+### Exception Extensions
+
+The `ExceptionExtensions` class in the `MaksIT.Core.Extensions` namespace walks an exception chain and collects messages from the exception and every inner exception.
+
+---
+
+#### Features
+
+1. **Extract Messages**:
+   - `ExtractMessages()` returns a `List<string>` from the exception and its `InnerException` chain.
+
+---
+
+#### Example Usage
+
+```csharp
+try {
+    // ...
+}
+catch (Exception ex) {
+    var messages = ex.ExtractMessages();
+}
+```
+
+---
+
+### Formats Extensions
+
+The `FormatsExtensions` class in the `MaksIT.Core.Extensions` namespace creates a Pax TAR archive from a directory tree.
+
+---
+
+#### Features
+
+1. **Create TAR Archives**:
+   - `TryCreateTarFromDirectory(sourceDirectory, outputTarPath)` writes all files under the source directory into a TAR file. Returns `false` if the source is missing, empty, or the output path cannot be created.
+
+---
+
+#### Example Usage
+
+```csharp
+if (FormatsExtensions.TryCreateTarFromDirectory(@"C:\data", @"C:\out\archive.tar")) {
+    Console.WriteLine("TAR created");
+}
+```
+
+---
+
+### DataTable Extensions
 
 The `DataTableExtensions` class provides methods for working with `DataTable` objects, such as counting duplicate rows and retrieving distinct records.
 
@@ -628,7 +691,7 @@ DataTable distinctTable = table.DistinctRecords(new[] { "Name", "Age" });
 
 ---
 
-#### Guid Extensions
+### Guid Extensions
 
 The `GuidExtensions` class provides methods for working with `Guid` values, including converting them to nullable types.
 
@@ -648,6 +711,47 @@ The `GuidExtensions` class provides methods for working with `Guid` values, incl
 Guid id = Guid.NewGuid();
 Guid? nullableId = id.ToNullable();
 ```
+
+---
+
+### Enum Extensions
+
+The `EnumExtensions` class provides utility methods for working with enum types, specifically for retrieving display names defined via the `DisplayAttribute`.
+
+---
+
+#### Features
+
+1. **Get Display Name**:
+   - Retrieve the value of the `DisplayAttribute.Name` property for an enum value, or fall back to the enum's name if the attribute is not present.
+
+---
+
+#### Example Usage
+
+```csharp
+using System.ComponentModel.DataAnnotations;
+using MaksIT.Core.Extensions;
+
+public enum Status {
+    [Display(Name = "In Progress")]
+    InProgress,
+    Completed
+}
+
+var status = Status.InProgress;
+string displayName = status.GetDisplayName(); // "In Progress"
+
+var completed = Status.Completed;
+string completedName = completed.GetDisplayName(); // "Completed"
+```
+
+---
+
+#### Best Practices
+
+- Use the `Display` attribute on enum members to provide user-friendly names for UI or logging.
+- Use `GetDisplayName()` to consistently retrieve display names for enums throughout your application.
 
 ---
 
@@ -713,6 +817,30 @@ services.AddLogging(builder => builder.AddJsonFileLogger("logs", TimeSpan.FromDa
 
 var logger = services.BuildServiceProvider().GetRequiredService<ILogger<JsonFileLogger>>();
 logger.LogInformation("Logging to JSON file!");
+```
+
+---
+
+### Console Loggers
+
+`LoggingBuilderExtensions` in the `MaksIT.Core.Logging` namespace also registers console logging used by MaksIT hosts (`builder.Logging.AddConsoleLogger()`).
+
+#### Methods
+
+| Method | Behavior |
+|--------|----------|
+| `AddSimpleConsoleLogger()` | Adds a timestamped simple console logger. Does not clear existing providers. |
+| `AddConsoleLogger(fileLoggerPath?)` | Clears providers, adds simple console, and optionally `AddFileLogger` when a folder path is passed. |
+| `AddJsonConsoleLogger(fileLoggerPath)` | Clears providers, adds JSON console, and optionally `AddJsonFileLogger` when a folder path is passed. |
+
+Timestamps use `yyyy-MM-ddTHH:mm:ss.fffZ` and scopes are included.
+
+#### Example Usage
+
+```csharp
+builder.Logging.AddConsoleLogger();
+builder.Logging.AddConsoleLogger("logs");
+builder.Logging.AddJsonConsoleLogger("logs");
 ```
 
 ---
@@ -839,7 +967,7 @@ lockManager.Dispose();
 
 ### Network Connection
 
-The `NetworkConnection` class provides methods for managing connections to network shares on Windows.
+The `NetworkConnection` class in the `MaksIT.Core.Networking.Windows` namespace provides methods for managing connections to network shares on Windows.
 
 ---
 
@@ -857,7 +985,7 @@ The `NetworkConnection` class provides methods for managing connections to netwo
 
 ```csharp
 var credentials = new NetworkCredential("username", "password");
-if (NetworkConnection.TryCreate(logger, "\\server\share", credentials, out var connection, out var error)) {
+if (NetworkConnection.TryCreate(logger, @"\\server\share", credentials, out var connection, out var error)) {
     connection.Dispose();
 }
 ```
@@ -915,6 +1043,7 @@ The `AESGCMUtility` class provides methods for encrypting and decrypting data us
 ```csharp
 var key = AESGCMUtility.GenerateKeyBase64();
 AESGCMUtility.TryEncryptData(data, key, out var encryptedData, out var error);
+AESGCMUtility.TryDecryptData(encryptedData, key, out var decrypted, out var decryptError);
 ```
 
 ---
@@ -944,16 +1073,41 @@ Base32Encoder.TryEncode(data, out var encoded, out var error);
 
 ---
 
+### Base64Url Utility
+
+The `Base64UrlUtility` class in the `MaksIT.Core.Security` namespace provides RFC 4648 §5 Base64Url encoding and decoding (used by JWK/JWS).
+
+---
+
+#### Features
+
+1. **Encode**:
+   - Encode a UTF-8 string or byte array to a Base64Url string (no padding; `+`/`/` replaced with `-`/`_`).
+
+2. **Decode**:
+   - Decode a Base64Url string to bytes (`Decode`) or a UTF-8 string (`DecodeToString`).
+
+---
+
+#### Example Usage
+
+```csharp
+var encoded = Base64UrlUtility.Encode("hello");
+var decoded = Base64UrlUtility.DecodeToString(encoded);
+```
+
+---
+
 ### Checksum Utility
 
-The `ChecksumUtility` class provides methods for calculating and verifying CRC32 checksums.
+The `ChecksumUtility` class provides methods for calculating and verifying CRC32 checksums. `Crc32` is a public `HashAlgorithm` implementation used by these helpers.
 
 ---
 
 #### Features
 
 1. **Checksum Calculation**:
-   - Calculate CRC32 checksums for data.
+   - Calculate CRC32 checksums for in-memory data, files, or files in chunks.
 
 2. **Checksum Verification**:
    - Verify data integrity using CRC32 checksums.
@@ -965,6 +1119,7 @@ The `ChecksumUtility` class provides methods for calculating and verifying CRC32
 ##### Calculating a Checksum
 ```csharp
 ChecksumUtility.TryCalculateCRC32Checksum(data, out var checksum, out var error);
+ChecksumUtility.TryCalculateCRC32ChecksumFromFile(path, out var fileChecksum, out var fileError);
 ```
 
 ---
@@ -1044,17 +1199,20 @@ public static bool TryValidateHash(
 
 ### JWT Generator
 
-The `JwtGenerator` class provides methods for generating and validating JSON Web Tokens (JWTs).
+The `JwtGenerator` class in the `MaksIT.Core.Security.JWT` namespace provides methods for generating and validating JSON Web Tokens (JWTs). ACL entries are stored with the `CustomClaims.AclEntry` claim type (`acl_entry`).
 
 ---
 
 #### Features
 
 1. **Token Generation**:
-   - Generate JWTs with claims and metadata.
+   - Generate JWTs from a `JWTTokenGenerateRequest` (secret, issuer, audience, expiration, optional user id, username, roles, ACL entries).
 
 2. **Token Validation**:
-   - Validate JWTs against a secret.
+   - Validate JWTs against a secret, issuer, and audience; returns `JWTTokenClaims`.
+
+3. **Secrets**:
+   - `GenerateSecret(keySize)` and `GenerateRefreshToken()` produce Base64 random values.
 
 ---
 
@@ -1062,7 +1220,24 @@ The `JwtGenerator` class provides methods for generating and validating JSON Web
 
 ##### Generating a Token
 ```csharp
-JwtGenerator.TryGenerateToken(secret, issuer, audience, 60, "user", roles, out var token, out var error);
+var request = new JWTTokenGenerateRequest {
+    Secret = secret,
+    Issuer = issuer,
+    Audience = audience,
+    Expiration = 60,
+    UserId = "user-1",
+    Username = "jane",
+    Roles = ["Admin"],
+    AclEntries = ["vault:read"]
+};
+
+if (JwtGenerator.TryGenerateToken(request, out var tokenData, out var error)) {
+    var (token, claims) = tokenData.Value;
+}
+
+if (JwtGenerator.TryValidateToken(secret, issuer, audience, token, out var validated, out var validateError)) {
+    // validated.UserId, validated.Roles, validated.AclEntries
+}
 ```
 
 ---
@@ -1119,6 +1294,7 @@ public static bool TryGenerateFromRSA(
 #### Notes
 - Only supports RSA public keys.
 - The generated JWK includes only the public exponent and modulus.
+- `JwkKeyType`, `JwkCurve`, and `JwkAlgorithm` are `Enumeration` types for JWK metadata.
 - Returns `false` and an error message if the RSA parameters are missing or invalid.
 
 ---
@@ -1437,7 +1613,7 @@ var response = new PagedResponse<UserDto>(items, totalCount, pageNumber, pageSiz
 
 ### Patch Operation
 
-The `PatchOperation` enum in the `MaksIT.Core.Webapi.Models` namespace defines operations for partial updates (PATCH requests).
+The `PatchOperation` enum in the `MaksIT.Core.Webapi.Models` namespace defines operations for partial updates (PATCH requests). Pair it with `PatchRequestModelBase` (`Operations` dictionary + `TryGetOperation`).
 
 #### Values
 
@@ -1452,25 +1628,163 @@ The `PatchOperation` enum in the `MaksIT.Core.Webapi.Models` namespace defines o
 
 ```csharp
 public class UserPatchRequest : PatchRequestModelBase {
-    public PatchOperation Operation { get; set; }
-    public string PropertyName { get; set; }
-    public object? Value { get; set; }
+    public string? Name { get; set; }
+    public List<string>? Roles { get; set; }
 }
 
-// Example: Set a field
 var patch = new UserPatchRequest {
-    Operation = PatchOperation.SetField,
-    PropertyName = "Name",
-    Value = "New Name"
+    Name = "New Name",
+    Operations = new Dictionary<string, PatchOperation> {
+        ["Name"] = PatchOperation.SetField,
+        ["Roles"] = PatchOperation.AddToCollection
+    }
 };
 
-// Example: Add to collection
-var patch = new UserPatchRequest {
-    Operation = PatchOperation.AddToCollection,
-    PropertyName = "Roles",
-    Value = "Admin"
-};
+if (patch.TryGetOperation(nameof(UserPatchRequest.Name), out var operation)) {
+    // operation == PatchOperation.SetField
+}
 ```
+
+---
+
+### Error Handling Middleware
+
+The `ErrorHandlingMiddleware` class in the `MaksIT.Core.Webapi.Middlewares` namespace catches unhandled exceptions, logs them, and returns HTTP 500 with a JSON body `{ error, details }`. Register it early in the ASP.NET pipeline.
+
+#### Example Usage
+
+```csharp
+app.UseMiddleware<ErrorHandlingMiddleware>();
+```
+
+---
+
+### Trace ID Logging Scope Middleware
+
+The `TraceIdLoggingScopeMiddleware` class in the `MaksIT.Core.Webapi.Middlewares` namespace adds a `TraceId` logging scope from `Activity.Current` or `HttpContext.TraceIdentifier`.
+
+#### Example Usage
+
+```csharp
+app.UseMiddleware<TraceIdLoggingScopeMiddleware>();
+```
+
+---
+
+## Sagas
+
+The `MaksIT.Core.Sagas` namespace provides a local saga runner with LIFO compensation on failure. Steps are registered on `LocalSagaBuilder` (an `ILogger` is required). `LocalSagaStep<T>` is internal; use `AddAction` / `AddStep` / `AddActionIf` / `AddStepIf`. Share state through `LocalSagaContext`.
+
+---
+
+#### Features
+
+1. **Saga Context**:
+   - `Get` / `Set` / `Contains` for passing values between steps.
+
+2. **Actions and Steps**:
+   - `AddAction` for side effects; `AddStep<T>` to store a result under `outputKey`. Conditional variants skip when the predicate is false.
+
+3. **Compensation**:
+   - Optional compensate callbacks run in reverse order when a later step throws.
+
+---
+
+#### Example Usage
+
+```csharp
+var saga = new LocalSagaBuilder(logger)
+    .AddAction("Reserve", async (ctx, ct) => {
+        ctx.Set("orderId", "123");
+        await Task.CompletedTask;
+    }, compensate: async (ctx, ct) => {
+        await Task.CompletedTask;
+    })
+    .AddStep<int>("Charge", async (ctx, ct) => 42, outputKey: "amount")
+    .AddActionIf(ctx => ctx.Contains("amount"), "Notify", async (ctx, ct) => {
+        await Task.CompletedTask;
+    })
+    .Build();
+
+await saga.ExecuteAsync();
+```
+
+---
+
+#### Best Practices
+
+1. **Idempotency**:
+   - Ensure saga steps are idempotent to handle retries gracefully.
+
+2. **Error Handling**:
+   - Implement compensation for steps that mutate external state.
+
+3. **State Management**:
+   - Use `LocalSagaContext` to pass data between steps; back up values you need to restore on compensate.
+
+---
+
+The `Sagas` namespace simplifies in-process workflows with compensation, not distributed two-phase commit.
+
+---
+
+## CombGuidGenerator
+
+The `CombGuidGenerator` class in the `MaksIT.Core.Comb` namespace provides methods for generating and extracting COMB GUIDs (GUIDs with embedded timestamps). COMB GUIDs improve index locality by combining randomness with a sortable timestamp.
+
+---
+
+#### Features
+
+1. **Generate COMB GUIDs**:
+   - Create GUIDs with embedded timestamps for improved database indexing.
+
+2. **Extract Timestamps**:
+   - Retrieve the embedded timestamp from a COMB GUID.
+
+3. **Support for Multiple Formats**:
+   - Generate COMB GUIDs compatible with SQL Server and PostgreSQL.
+
+---
+
+#### Example Usage
+
+##### Generating a COMB GUID
+```csharp
+var baseGuid = Guid.NewGuid();
+var timestamp = DateTime.UtcNow;
+
+var combGuid = CombGuidGenerator.CreateCombGuid(baseGuid, timestamp, CombGuidType.SqlServer);
+var combGuidPostgres = CombGuidGenerator.CreateCombGuid(baseGuid, timestamp, CombGuidType.PostgreSql);
+```
+
+##### Extracting a Timestamp
+```csharp
+var extractedTimestamp = CombGuidGenerator.ExtractTimestamp(combGuid, CombGuidType.SqlServer);
+Console.WriteLine($"Extracted Timestamp: {extractedTimestamp}");
+```
+
+##### Generating a COMB GUID with Current Timestamp
+```csharp
+var combGuidWithCurrentTimestamp = CombGuidGenerator.CreateCombGuid(Guid.NewGuid(), CombGuidType.SqlServer);
+```
+
+---
+
+#### Best Practices
+
+1. **Use COMB GUIDs for Indexing**:
+   - COMB GUIDs are ideal for database indexing as they improve index locality.
+
+2. **Choose the Correct Format**:
+   - Use `CombGuidType.SqlServer` for SQL Server and `CombGuidType.PostgreSql` for PostgreSQL.
+
+3. **Ensure UTC Timestamps**:
+   - Always use UTC timestamps to ensure consistency across systems.
+
+---
+
+The `CombGuidGenerator` class simplifies the creation and management of COMB GUIDs, making it easier to work with GUIDs in database applications.
 
 ---
 
@@ -1519,6 +1833,8 @@ The `EnvVar` class provides methods for managing environment variables.
 ##### Adding to PATH
 ```csharp
 EnvVar.TryAddToPath("/usr/local/bin", out var error);
+EnvVar.TrySet("MY_VAR", "value", "process", out var setError);
+EnvVar.TryUnSet("MY_VAR", "process", out var unsetError);
 ```
 
 ---
@@ -1532,10 +1848,16 @@ The `FileSystem` class provides methods for working with files and directories.
 #### Features
 
 1. **Copy Files and Folders**:
-   - Copy files or directories to a target location.
+   - Copy files or directories to a target location (`TryCopyToFolder`).
 
 2. **Delete Files and Folders**:
-   - Delete files or directories.
+   - Delete files or directories (`TryDeleteFileOrDirectory`).
+
+3. **Wildcard Paths**:
+   - `ResolveWildcardedPath` expands `*` / `?` path segments (including `?:` for drives on Windows).
+
+4. **Duplicate File Names**:
+   - `DuplicateFileNameCheck` returns a non-colliding path (`file(1).ext`).
 
 ---
 
@@ -1560,7 +1882,7 @@ The `Processes` class provides methods for managing system processes.
    - Start new processes with optional arguments.
 
 2. **Kill Processes**:
-   - Terminate processes by name.
+   - Terminate processes by name (`TryKill` accepts `*` / `?` wildcards).
 
 ---
 
@@ -1570,47 +1892,6 @@ The `Processes` class provides methods for managing system processes.
 ```csharp
 Processes.TryStart("notepad.exe", "", 0, false, out var error);
 ```
-
----
-
-## Enum Extensions
-
-The `EnumExtensions` class provides utility methods for working with enum types, specifically for retrieving display names defined via the `DisplayAttribute`.
-
----
-
-#### Features
-
-1. **Get Display Name**:
-   - Retrieve the value of the `DisplayAttribute.Name` property for an enum value, or fall back to the enum's name if the attribute is not present.
-
----
-
-#### Example Usage
-
-```csharp
-using System.ComponentModel.DataAnnotations;
-using MaksIT.Core.Extensions;
-
-public enum Status {
-    [Display(Name = "In Progress")]
-    InProgress,
-    Completed
-}
-
-var status = Status.InProgress;
-string displayName = status.GetDisplayName(); // "In Progress"
-
-var completed = Status.Completed;
-string completedName = completed.GetDisplayName(); // "Completed"
-```
-
----
-
-#### Best Practices
-
-- Use the `Display` attribute on enum members to provide user-friendly names for UI or logging.
-- Use `GetDisplayName()` to consistently retrieve display names for enums throughout your application.
 
 ---
 
