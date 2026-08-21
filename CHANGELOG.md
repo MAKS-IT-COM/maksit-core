@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [1.6.10] - 2026-08-21
+
+### Added
+- **CLI:** `MaksIT.Core.Cli` for generating JWT/pepper secrets, AES-256 keys, TOTP material, password hashes, and COMB GUIDs. Interactive numbered menu when run with no arguments; flag-based commands (`secret`, `jwt`, `aes`, `totp`, `password`, `guid`) for scripts and agents. Shipped in the GitHub release zip next to the library nupkg; not pushed to nuget.org.
+
+### Changed
+- **Tests:** migrate to **xunit.v3** **4.0** + **Microsoft Testing Platform** only (`src/global.json` `test.runner` next to the `.slnx`; no VSTest / **coverlet.collector** / **Microsoft.NET.Test.Sdk** / **xunit.runner.visualstudio**). Use **coverlet.MTP**; **TestRunner** always uses `--coverlet` (scoped to **`[MaksIT.*]*`**).
+- RepoUtils `DotNetPublish` now publishes listed CLI projects alongside `DotNetPack` without replacing the library NuGet artifact.
+- **README:** aligned the table of contents with the body heading hierarchy and mapped remaining public APIs (console loggers, Web API middleware, Base64Url, CRC32, exception/formats extensions, `QueryResultBase`, `PatchRequestModelBase`). Corrected saga, JWT, DateTime, PATCH, and network-share examples to match current signatures.
+
 ## [1.6.9] - 2026-08-14
 
 ### Changed

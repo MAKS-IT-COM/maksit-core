@@ -15,7 +15,10 @@
       "name": "DotNetTest",
       "stageLabel": "test",
       "enabled": true,
-      "project": "..\\..\\..\\src\\MaksIT.Core.Tests",
+      "projects": [
+        "..\\..\\..\\src\\MaksIT.Core.Tests",
+        "..\\..\\..\\src\\MaksIT.Core.Cli.Tests"
+      ],
       "resultsDir": "..\\..\\..\\testResults"
     },
     {
@@ -34,6 +37,15 @@
       "enabled": true,
       "projectFiles": [
         "..\\..\\..\\src\\MaksIT.Core\\MaksIT.Core.csproj"
+      ],
+      "artifactsDir": "..\\..\\..\\releases"
+    },
+    {
+      "name": "DotNetPublish",
+      "stageLabel": "build",
+      "enabled": true,
+      "projectFiles": [
+        "..\\..\\..\\src\\MaksIT.Core.Cli\\MaksIT.Core.Cli.csproj"
       ],
       "artifactsDir": "..\\..\\..\\releases"
     },

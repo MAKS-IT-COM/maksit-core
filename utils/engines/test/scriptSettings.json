@@ -8,7 +8,8 @@
       "stageLabel": "test",
       "enabled": true,
       "projects": [
-        "..\\..\\..\\src\\MaksIT.Core.Tests"
+        "..\\..\\..\\src\\MaksIT.Core.Tests",
+        "..\\..\\..\\src\\MaksIT.Core.Cli.Tests"
       ],
       "resultsDir": "..\\..\\..\\test-results"
     },
