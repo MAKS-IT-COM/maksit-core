@@ -1,7 +1,7 @@
 # MaksIT.Core Library Documentation
 
 ![Line Coverage](https://img.shields.io/badge/Line%20Coverage-38.5%25-yellow)
-![Branch Coverage](https://img.shields.io/badge/Branch%20Coverage-28.4%25-yellow)
+![Branch Coverage](https://img.shields.io/badge/Branch%20Coverage-28.8%25-yellow)
 ![Method Coverage](https://img.shields.io/badge/Method%20Coverage-37.9%25-yellow)
 
 **MaksIT.Core** is a .NET 10 library of shared helpers used across MaksIT products: domain/DTO/Web API bases, strongly-typed enumerations, extensions, logging, security (JWT, JWK, JWS, TOTP, AES-GCM), sagas, COMB GUIDs, and Web API pagination.

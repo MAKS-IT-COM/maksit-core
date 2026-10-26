@@ -115,7 +115,7 @@ This project follows [Semantic Versioning](https://semver.org/):
 
 ## Release Process
 
-Orchestration lives in **`utils/`** (from [maksit-repoutils](https://github.com/MAKS-IT-COM/maksit-repoutils)).
+Orchestration lives in **`utils/`** (from [maksit-repoutils](https://git.maks-it.com/MAKS-IT/maksit-repoutils)).
 
 ### Prerequisites
 

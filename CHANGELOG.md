@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.11] - 2026-10-26
+
+### Changed
+- Updated NuGet dependencies: Microsoft.Extensions.* and System.Threading.RateLimiting 10.0.11 → 10.0.14, Microsoft.AspNetCore.* 2.3.12 → 2.3.13, Microsoft.AspNetCore.Cryptography.KeyDerivation 10.0.11 → 10.0.14, Microsoft.IdentityModel.Tokens and System.IdentityModel.Tokens.Jwt 8.22.0 → 8.23.0, System.Linq.Dynamic.Core 1.7.3 → 1.7.4, System.CommandLine 2.0.11 → 2.0.14, coverlet.MTP 10.0.1 → 10.1.0, xunit.v3 4.0.0 → 4.0.2
+- Synced RepoUtils utils and pointed CONTRIBUTING at the maksit-repoutils Origin URL
+
 ## [1.6.10] - 2026-08-21
 
 ### Added
@@ -109,3 +115,4 @@ Template for new releases:
 ### Security
 - Security improvements
 -->
+

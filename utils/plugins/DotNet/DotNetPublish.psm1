@@ -10,6 +10,10 @@
     and appends those publish folders to shared archive inputs so later plugins
     can zip them next to any earlier pack outputs. Existing NuGet package facts
     (packageFile) are left unchanged.
+
+    Optional runtimeIdentifiers (or runtimeIdentifier) produce per-RID folders
+    under artifactsDir/<ProjectName>/<rid> for desktop installers (Windows MSI /
+    Linux Flatpak). When RIDs are set, selfContained defaults to true.
 #>
 
 if (-not (Get-Command Import-PluginDependency -ErrorAction SilentlyContinue)) {
@@ -18,6 +22,28 @@ if (-not (Get-Command Import-PluginDependency -ErrorAction SilentlyContinue)) {
     if (Test-Path $pluginSupportModulePath -PathType Leaf) {
         Import-Module $pluginSupportModulePath -Force -Global -ErrorAction Stop
     }
+}
+
+function Get-DotNetPublishRuntimeIdentifiers {
+    param(
+        [Parameter(Mandatory = $true)]
+        $PluginSettings
+    )
+
+    $rids = [System.Collections.Generic.List[string]]::new()
+    if ($PluginSettings.PSObject.Properties['runtimeIdentifiers'] -and $null -ne $PluginSettings.runtimeIdentifiers) {
+        foreach ($item in @($PluginSettings.runtimeIdentifiers)) {
+            $value = [string]$item
+            if (-not [string]::IsNullOrWhiteSpace($value)) {
+                $rids.Add($value.Trim())
+            }
+        }
+    }
+    elseif ($PluginSettings.PSObject.Properties['runtimeIdentifier'] -and -not [string]::IsNullOrWhiteSpace([string]$PluginSettings.runtimeIdentifier)) {
+        $rids.Add(([string]$PluginSettings.runtimeIdentifier).Trim())
+    }
+
+    return @($rids)
 }
 
 function Invoke-Plugin {
@@ -29,6 +55,7 @@ function Invoke-Plugin {
     Import-PluginDependency -ModuleName "Logging" -RequiredCommand "Write-Log"
     Import-PluginDependency -ModuleName "ScriptConfig" -RequiredCommand "Assert-Command"
     Import-PluginDependency -ModuleName "EngineContext" -RequiredCommand "Set-EngineFact"
+    Import-PluginDependency -ModuleName "ExternalCommandSupport" -RequiredCommand "Invoke-ExternalCommand"
 
     $pluginSettings = $Settings
     $sharedSettings = $Settings.context
@@ -81,32 +108,92 @@ function Invoke-Plugin {
         }
     }
 
+    $runtimeIdentifiers = @(Get-DotNetPublishRuntimeIdentifiers -PluginSettings $pluginSettings)
+    $selfContained = $null
+    if ($pluginSettings.PSObject.Properties['selfContained'] -and $null -ne $pluginSettings.selfContained) {
+        $selfContained = [bool]$pluginSettings.selfContained
+    }
+    elseif ($runtimeIdentifiers.Count -gt 0) {
+        $selfContained = $true
+    }
+
+    $publishSingleFile = $false
+    if ($pluginSettings.PSObject.Properties['publishSingleFile'] -and $null -ne $pluginSettings.publishSingleFile) {
+        $publishSingleFile = [bool]$pluginSettings.publishSingleFile
+    }
+
+    $additionalArguments = @()
+    if ($pluginSettings.PSObject.Properties['additionalPublishArguments'] -and $null -ne $pluginSettings.additionalPublishArguments) {
+        $additionalArguments = @($pluginSettings.additionalPublishArguments | ForEach-Object { [string]$_ } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+    }
+
+    $publishOutputs = [System.Collections.Generic.List[object]]::new()
+    $ridLoop = @($null)
+    if ($runtimeIdentifiers.Count -gt 0) {
+        $ridLoop = @($runtimeIdentifiers)
+    }
+
     foreach ($publishProjectPath in $projectFiles) {
-        $publishDir = Join-Path $artifactsDirectory ([System.IO.Path]::GetFileNameWithoutExtension($publishProjectPath))
+        $projectName = [System.IO.Path]::GetFileNameWithoutExtension($publishProjectPath)
+        $projectRoot = Join-Path $artifactsDirectory $projectName
 
-        if (Test-Path $publishDir) {
-            Remove-Item -Path $publishDir -Recurse -Force
+        foreach ($runtimeIdentifier in $ridLoop) {
+            $publishDir = if ([string]::IsNullOrWhiteSpace([string]$runtimeIdentifier)) {
+                $projectRoot
+            }
+            else {
+                Join-Path $projectRoot ([string]$runtimeIdentifier)
+            }
+
+            if (Test-Path $publishDir) {
+                Remove-Item -Path $publishDir -Recurse -Force
+            }
+
+            $ridLabel = if ([string]::IsNullOrWhiteSpace([string]$runtimeIdentifier)) { 'current runtime' } else { [string]$runtimeIdentifier }
+            Write-Log -Level "STEP" -Message "Publishing release artifact ($projectName / $ridLabel)..."
+            $dotnetPublishArguments = @(
+                'publish', $publishProjectPath, '-c', 'Release', '-o', $publishDir, '--nologo'
+            )
+            if (-not [string]::IsNullOrWhiteSpace([string]$runtimeIdentifier)) {
+                $dotnetPublishArguments += @('-r', [string]$runtimeIdentifier)
+            }
+
+            if ($null -ne $selfContained) {
+                if ($selfContained) {
+                    $dotnetPublishArguments += '--self-contained'
+                }
+                else {
+                    $dotnetPublishArguments += '--no-self-contained'
+                }
+            }
+
+            if ($publishSingleFile) {
+                $dotnetPublishArguments += '-p:PublishSingleFile=true'
+            }
+
+            if ($additionalArguments.Count -gt 0) {
+                $dotnetPublishArguments += $additionalArguments
+            }
+
+            Invoke-ExternalCommand -Name dotnet -ArgumentList $dotnetPublishArguments | Out-Null
+
+            $publishedItems = @(Get-ChildItem -Path $publishDir -Force -ErrorAction SilentlyContinue)
+            if ($publishedItems.Count -eq 0) {
+                throw "dotnet publish completed, but no files were produced in: $publishDir"
+            }
+
+            Write-Log -Level "OK" -Message "  Published artifact ready: $publishDir"
+            $archiveInputs.Add($publishDir)
+            $publishOutputs.Add([pscustomobject]@{
+                    projectName        = $projectName
+                    runtimeIdentifier  = [string]$runtimeIdentifier
+                    directory          = $publishDir
+                })
         }
-
-        Write-Log -Level "STEP" -Message "Publishing release artifact..."
-        $dotnetPublishArguments = @(
-            'publish', $publishProjectPath, '-c', 'Release', '-o', $publishDir, '--nologo'
-        )
-        & dotnet @dotnetPublishArguments
-        if ($LASTEXITCODE -ne 0) {
-            throw "dotnet publish failed for $publishProjectPath."
-        }
-
-        $publishedItems = @(Get-ChildItem -Path $publishDir -Force -ErrorAction SilentlyContinue)
-        if ($publishedItems.Count -eq 0) {
-            throw "dotnet publish completed, but no files were produced in: $publishDir"
-        }
-
-        Write-Log -Level "OK" -Message "  Published artifact ready: $publishDir"
-        $archiveInputs.Add($publishDir)
     }
 
     Set-EngineFact -Context $sharedSettings -Namespace 'release' -Name 'archiveInputs' -Value @($archiveInputs) -Overwrite Replace -LegacyProperty 'releaseArchiveInputs'
+    Set-EngineFact -Context $sharedSettings -Namespace 'dotnet' -Name 'publishOutputs' -Value @($publishOutputs) -Overwrite Replace
 }
 
-Export-ModuleMember -Function Invoke-Plugin
+Export-ModuleMember -Function Invoke-Plugin, Get-DotNetPublishRuntimeIdentifiers

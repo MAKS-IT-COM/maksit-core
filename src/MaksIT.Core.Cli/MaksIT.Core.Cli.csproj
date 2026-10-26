@@ -8,7 +8,7 @@
     <RootNamespace>$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
     <IsPackable>false</IsPackable>
 
-    <Version>1.6.10</Version>
+    <Version>1.6.11</Version>
     <Authors>Maksym Sadovnychyy</Authors>
     <Company>MAKS-IT</Company>
     <Product>MaksIT.Core.Cli</Product>
@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.CommandLine" Version="2.0.11" />
+    <PackageReference Include="System.CommandLine" Version="2.0.14" />
   </ItemGroup>
 
 </Project>
