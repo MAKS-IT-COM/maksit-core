@@ -7,11 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.6.14] - 2026-10-27
+
+### Changed
+- Github workflow update
+
 ## [1.6.13] - 2026-10-27
 
 ### Changed
 - Bumped package version to exercise the GitHub Actions NuGet publish workflow
-
 
 ## [1.6.12] - 2026-10-27
 
